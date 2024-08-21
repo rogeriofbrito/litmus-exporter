@@ -1,4 +1,4 @@
-package litmusextractor
+package mongoextractor
 
 import (
 	"context"
@@ -8,18 +8,18 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
-func NewLitmusExtractorDefault(mongoClient *mongo.Client) *LitmusExtractorDefault {
-	return &LitmusExtractorDefault{
+func NewFullMongoExtractor(mongoClient *mongo.Client) *FullMongoExtractor {
+	return &FullMongoExtractor{
 		mongoClient: mongoClient,
 	}
 }
 
-type LitmusExtractorDefault struct {
+type FullMongoExtractor struct {
 	mongoClient *mongo.Client
 }
 
-func (le LitmusExtractorDefault) ChaosExperimentsExtractor(ctx context.Context) ([]mongocollection.ChaosExperiment, error) {
-	mongoCollection := le.mongoClient.Database("litmus").Collection("chaosExperiments")
+func (fme FullMongoExtractor) ChaosExperimentsExtractor(ctx context.Context) ([]mongocollection.ChaosExperiment, error) {
+	mongoCollection := fme.mongoClient.Database("litmus").Collection("chaosExperiments")
 	cur, err := mongoCollection.Find(ctx, bson.D{})
 	if err != nil {
 		return nil, err
@@ -44,8 +44,8 @@ func (le LitmusExtractorDefault) ChaosExperimentsExtractor(ctx context.Context) 
 	return collections, nil
 }
 
-func (le LitmusExtractorDefault) ChaosExperimentsRunsExtractor(ctx context.Context) ([]mongocollection.ChaosExperimentRun, error) {
-	mongoCollection := le.mongoClient.Database("litmus").Collection("chaosExperimentRuns")
+func (fme FullMongoExtractor) ChaosExperimentsRunsExtractor(ctx context.Context) ([]mongocollection.ChaosExperimentRun, error) {
+	mongoCollection := fme.mongoClient.Database("litmus").Collection("chaosExperimentRuns")
 	cur, err := mongoCollection.Find(ctx, bson.D{})
 	if err != nil {
 		return nil, err

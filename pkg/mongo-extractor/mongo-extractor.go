@@ -1,4 +1,4 @@
-package litmusextractor
+package mongoextractor
 
 import (
 	"context"
@@ -6,7 +6,7 @@ import (
 	mongocollection "github.com/rogeriofbrito/litmus-exporter/pkg/mongo-collection"
 )
 
-type ILitmusExtractor interface {
+type IMongoExtractor interface {
 	ChaosExperimentsExtractor(ctx context.Context) ([]mongocollection.ChaosExperiment, error)
 	ChaosExperimentsRunsExtractor(ctx context.Context) ([]mongocollection.ChaosExperimentRun, error)
 }
