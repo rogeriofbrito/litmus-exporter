@@ -2,6 +2,8 @@ package connector
 
 import (
 	"context"
+	"fmt"
+	"os"
 	"strings"
 
 	"github.com/rogeriofbrito/litmus-exporter/pkg/model"
@@ -136,6 +138,12 @@ func (pc PostgresConnector) SaveChaosExperimentRuns(ctx context.Context, cers []
 }
 
 func (pc PostgresConnector) getGormDB() (*gorm.DB, error) {
-	dsn := "host=localhost user=litmus password=litmus dbname=litmus port=5433 sslmode=disable"
+	dsn := fmt.Sprintf("host=%s user=%s password=%s dbname=%s port=%s sslmode=%s",
+		os.Getenv("POSTGRES_HOST"),
+		os.Getenv("POSTGRES_USER"),
+		os.Getenv("POSTGRES_PASSWORD"),
+		os.Getenv("POSTGRES_DATABASE_NAME"),
+		os.Getenv("POSTGRES_PORT"),
+		os.Getenv("POSTGRES_SSL_MODE"))
 	return gorm.Open(postgres.Open(dsn), &gorm.Config{})
 }
