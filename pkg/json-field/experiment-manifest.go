@@ -1,57 +1,57 @@
 package jsonfield
 
-type ChaosExperimentManifest struct {
-	Kind       string                          `json:"kind"`
-	APIVersion string                          `json:"apiVersion"`
-	Metadata   ChaosExperimentManifestMetadata `json:"metadata"`
-	Spec       ChaosExperimentManifestSpec     `json:"spec"`
-	Status     ChaosExperimentManifestStatus   `json:"status"`
+type ExperimentManifest struct {
+	Kind       string   `json:"kind"`
+	APIVersion string   `json:"apiVersion"`
+	Metadata   Metadata `json:"metadata"`
+	Spec       Spec     `json:"spec"`
+	Status     Status   `json:"status"`
 }
 
-type ChaosExperimentManifestMetadata struct {
-	Name              string                                `json:"name"`
-	Namespace         string                                `json:"namespace"`
-	CreationTimestamp int64                                 `json:"creationTimestamp"`
-	Labels            ChaosExperimentManifestMetadataLabels `json:"labels"`
+type Metadata struct {
+	Name              string `json:"name"`
+	Namespace         string `json:"namespace"`
+	CreationTimestamp int64  `json:"creationTimestamp"`
+	Labels            Labels `json:"labels"`
 }
 
-type ChaosExperimentManifestMetadataLabels struct {
+type Labels struct {
 	InfraID                                 string `json:"infra_id"`
 	RevisionID                              string `json:"revision_id"`
 	WorkflowID                              string `json:"workflow_id"`
 	WorkflowsArgoprojIoControllerInstanceid string `json:"workflows.argoproj.io/controller-instanceid"`
 }
 
-type ChaosExperimentManifestSpec struct {
-	Templates          []ChaosExperimentManifestSpecTemplate      `json:"templates"`
-	Entrypoint         string                                     `json:"entrypoint"`
-	Arguments          ChaosExperimentManifestSpecArguments       `json:"arguments"`
-	ServiceAccountName string                                     `json:"serviceAccountName"`
-	PodGC              ChaosExperimentManifestSpecPodGC           `json:"podGC"`
-	SecurityContext    ChaosExperimentManifestSpecSecurityContext `json:"securityContext"`
+type Spec struct {
+	Templates          []Template      `json:"templates"`
+	Entrypoint         string          `json:"entrypoint"`
+	Arguments          Arguments       `json:"arguments"`
+	ServiceAccountName string          `json:"serviceAccountName"`
+	PodGC              PodGC           `json:"podGC"`
+	SecurityContext    SecurityContext `json:"securityContext"`
 }
 
-type ChaosExperimentManifestSpecTemplate struct {
-	Name      string                                   `json:"name"`
-	Inputs    struct{}                                 `json:"inputs"`
-	Outputs   struct{}                                 `json:"outputs"`
-	Metadata  struct{}                                 `json:"metadata"`
-	Steps     ChaosExperimentManifestSpecTemplateSteps `json:"steps,omitempty"`
-	Container ChaosExperimentManifestSpecContainer     `json:"container,omitempty"`
+type Template struct {
+	Name      string    `json:"name"`
+	Inputs    struct{}  `json:"inputs"`
+	Outputs   struct{}  `json:"outputs"`
+	Metadata  struct{}  `json:"metadata"`
+	Steps     Steps     `json:"steps,omitempty"`
+	Container Container `json:"container,omitempty"`
 }
 
-type ChaosExperimentManifestStatus struct {
+type Status struct {
 	StartedAt  int64 `json:"startedAt"`
 	FinishedAt int64 `json:"finishedAt"`
 }
 
-type ChaosExperimentManifestSpecTemplateSteps [][]struct {
+type Steps [][]struct {
 	Name      string   `json:"name"`
 	Template  string   `json:"template"`
 	Arguments struct{} `json:"arguments"`
 }
 
-type ChaosExperimentManifestSpecContainer struct {
+type Container struct {
 	Name      string   `json:"name"`
 	Image     string   `json:"image"`
 	Command   []string `json:"command"`
@@ -59,20 +59,20 @@ type ChaosExperimentManifestSpecContainer struct {
 	Resources struct{} `json:"resources"`
 }
 
-type ChaosExperimentManifestSpecArguments struct {
-	Parameters []ChaosExperimentManifestSpecArgumentsParameter `json:"parameters"`
+type Arguments struct {
+	Parameters []Parameter `json:"parameters"`
 }
 
-type ChaosExperimentManifestSpecArgumentsParameter struct {
+type Parameter struct {
 	Name  string `json:"name"`
 	Value string `json:"value"`
 }
 
-type ChaosExperimentManifestSpecPodGC struct {
+type PodGC struct {
 	Strategy string `json:"strategy"`
 }
 
-type ChaosExperimentManifestSpecSecurityContext struct {
+type SecurityContext struct {
 	RunAsUser    int  `json:"runAsUser"`
 	RunAsNonRoot bool `json:"runAsNonRoot"`
 }

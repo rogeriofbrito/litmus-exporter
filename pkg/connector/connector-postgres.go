@@ -28,20 +28,20 @@ func (pc PostgresConnector) Init(ctx context.Context) error {
 	err = db.AutoMigrate(
 		&model.ChaosExperiment{},
 		&model.User{},
-		&model.ChaosExperimentRevision{},
-		&model.ChaosExperimentManifest{},
-		&model.ChaosExperimentManifestMetadata{},
-		&model.ChaosExperimentManifestMetadataLabels{},
-		&model.ChaosExperimentManifestSpec{},
-		&model.ChaosExperimentManifestSpecTemplate{},
-		&model.ChaosExperimentManifestSpecTemplateSteps{},
-		&model.ChaosExperimentManifestSpecContainer{},
-		&model.ChaosExperimentManifestSpecArguments{},
-		&model.ChaosExperimentManifestSpecArgumentsParameter{},
-		&model.ChaosExperimentManifestSpecPodGC{},
-		&model.ChaosExperimentManifestSpecSecurityContext{},
-		&model.ChaosExperimentManifestStatus{},
-		&model.ChaosExperimentRecentRunDetails{},
+		&model.Revision{},
+		&model.ExperimentManifest{},
+		&model.Metadata{},
+		&model.Labels{},
+		&model.Spec{},
+		&model.Template{},
+		&model.Steps{},
+		&model.Container{},
+		&model.Arguments{},
+		&model.Parameter{},
+		&model.PodGC{},
+		&model.SecurityContext{},
+		&model.Status{},
+		&model.RecentExperimentRunDetail{},
 		&model.Probe{},
 	)
 	if err != nil {
@@ -57,10 +57,10 @@ func (pc PostgresConnector) SaveChaosExperiments(ctx context.Context, ces []mong
 		return err
 	}
 
-	parametersConv := func(c []jsonfield.ChaosExperimentManifestSpecArgumentsParameter) []model.ChaosExperimentManifestSpecArgumentsParameter {
-		var m []model.ChaosExperimentManifestSpecArgumentsParameter
+	parametersConv := func(c []jsonfield.Parameter) []model.Parameter {
+		var m []model.Parameter
 		for _, ci := range c {
-			m = append(m, model.ChaosExperimentManifestSpecArgumentsParameter{
+			m = append(m, model.Parameter{
 				Name:  ci.Name,
 				Value: ci.Value,
 			})
@@ -68,30 +68,30 @@ func (pc PostgresConnector) SaveChaosExperiments(ctx context.Context, ces []mong
 		return m
 	}
 
-	templatesConv := func(c []jsonfield.ChaosExperimentManifestSpecTemplate) []model.ChaosExperimentManifestSpecTemplate {
-		getStepName := func(steps jsonfield.ChaosExperimentManifestSpecTemplateSteps) string {
+	templatesConv := func(c []jsonfield.Template) []model.Template {
+		getStepName := func(steps jsonfield.Steps) string {
 			if len(steps) == 0 {
 				return ""
 			}
 			return steps[0][0].Name
 		}
 
-		getStepTemplate := func(steps jsonfield.ChaosExperimentManifestSpecTemplateSteps) string {
+		getStepTemplate := func(steps jsonfield.Steps) string {
 			if len(steps) == 0 {
 				return ""
 			}
 			return steps[0][0].Template
 		}
 
-		var m []model.ChaosExperimentManifestSpecTemplate
+		var m []model.Template
 		for _, ci := range c {
-			m = append(m, model.ChaosExperimentManifestSpecTemplate{
+			m = append(m, model.Template{
 				Name: ci.Name,
-				Steps: model.ChaosExperimentManifestSpecTemplateSteps{
+				Steps: model.Steps{
 					Name:     getStepName(ci.Steps),
 					Template: getStepTemplate(ci.Steps),
 				},
-				Container: model.ChaosExperimentManifestSpecContainer{
+				Container: model.Container{
 					Name:    ci.Container.Name,
 					Image:   ci.Container.Image,
 					Command: strings.Join(ci.Container.Command, ","),
@@ -102,40 +102,40 @@ func (pc PostgresConnector) SaveChaosExperiments(ctx context.Context, ces []mong
 		return m
 	}
 
-	experimentRevisionConv := func(c []mongocollection.ChaosExperimentRevision) []model.ChaosExperimentRevision {
-		var m []model.ChaosExperimentRevision
+	revisionConv := func(c []mongocollection.Revision) []model.Revision {
+		var m []model.Revision
 		for _, ci := range c {
-			m = append(m, model.ChaosExperimentRevision{
+			m = append(m, model.Revision{
 				RevisionID: ci.RevisionId,
-				ExperimentManifest: model.ChaosExperimentManifest{
+				ExperimentManifest: model.ExperimentManifest{
 					Kind:       ci.ExperimentManifest.Kind,
 					APIVersion: ci.ExperimentManifest.APIVersion,
-					Metadata: model.ChaosExperimentManifestMetadata{
+					Metadata: model.Metadata{
 						Name:              ci.ExperimentManifest.Metadata.Name,
 						CreationTimestamp: ci.ExperimentManifest.Metadata.CreationTimestamp,
-						Labels: model.ChaosExperimentManifestMetadataLabels{
+						Labels: model.Labels{
 							InfraID:              ci.ExperimentManifest.Metadata.Labels.InfraID,
 							RevisionID:           ci.ExperimentManifest.Metadata.Labels.RevisionID,
 							WorkflowID:           ci.ExperimentManifest.Metadata.Labels.WorkflowID,
 							ControllerInstanceID: ci.ExperimentManifest.Metadata.Labels.WorkflowsArgoprojIoControllerInstanceid,
 						},
 					},
-					Spec: model.ChaosExperimentManifestSpec{
+					Spec: model.Spec{
 						Templates:  templatesConv(ci.ExperimentManifest.Spec.Templates),
 						Entrypoint: ci.ExperimentManifest.Spec.Entrypoint,
-						Arguments: model.ChaosExperimentManifestSpecArguments{
+						Arguments: model.Arguments{
 							Parameters: parametersConv(ci.ExperimentManifest.Spec.Arguments.Parameters),
 						},
 						ServiceAccountName: ci.ExperimentManifest.Spec.ServiceAccountName,
-						PodGC: model.ChaosExperimentManifestSpecPodGC{
+						PodGC: model.PodGC{
 							Strategy: ci.ExperimentManifest.Spec.PodGC.Strategy,
 						},
-						SecurityContext: model.ChaosExperimentManifestSpecSecurityContext{
+						SecurityContext: model.SecurityContext{
 							RunAsUser:    ci.ExperimentManifest.Spec.SecurityContext.RunAsUser,
 							RunAsNonRoot: ci.ExperimentManifest.Spec.SecurityContext.RunAsNonRoot,
 						},
 					},
-					Status: model.ChaosExperimentManifestStatus{
+					Status: model.Status{
 						StartedAt:  ci.ExperimentManifest.Status.StartedAt,
 						FinishedAt: ci.ExperimentManifest.Status.FinishedAt,
 					},
@@ -156,10 +156,10 @@ func (pc PostgresConnector) SaveChaosExperiments(ctx context.Context, ces []mong
 		return m
 	}
 
-	recentExperimentRunDetailsConv := func(c []mongocollection.ChaosExperimentRecentRunDetails) []model.ChaosExperimentRecentRunDetails {
-		var m []model.ChaosExperimentRecentRunDetails
+	recentExperimentRunDetailsConv := func(c []mongocollection.RecentExperimentRunDetail) []model.RecentExperimentRunDetail {
+		var m []model.RecentExperimentRunDetail
 		for _, ci := range c {
-			m = append(m, model.ChaosExperimentRecentRunDetails{
+			m = append(m, model.RecentExperimentRunDetail{
 				UpdatedAt: ci.UpdatedAt,
 				CreatedAt: ci.CreatedAt,
 				/*
@@ -209,7 +209,7 @@ func (pc PostgresConnector) SaveChaosExperiments(ctx context.Context, ces []mong
 			CronSyntax:                 ce.CronSyntax,
 			InfraID:                    ce.InfraID,
 			ExperimentType:             ce.ExperimentType,
-			Revision:                   experimentRevisionConv(ce.Revision),
+			Revision:                   revisionConv(ce.Revision),
 			IsCustomExperiment:         ce.IsCustomExperiment,
 			RecentExperimentRunDetails: recentExperimentRunDetailsConv(ce.RecentExperimentRunDetails),
 			TotalExperimentRuns:        ce.TotalExperimentRuns,
