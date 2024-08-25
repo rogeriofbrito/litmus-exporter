@@ -6,6 +6,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/rogeriofbrito/litmus-exporter/pkg/connector"
 	mongoextractor "github.com/rogeriofbrito/litmus-exporter/pkg/mongo-extractor"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
@@ -28,12 +29,36 @@ func main() {
 		log.Fatalf("%s strategy not supported", mes)
 	}
 
-	_, err = me.ChaosExperimentsExtractor(context.Background())
+	var c connector.IConnector
+	ct := os.Getenv("CONNECTOR_TYPE")
+	switch ct {
+	case "POSTGRES":
+		c = connector.NewPostgresConnector()
+	default:
+		log.Fatalf("%s connector type not supported", ct)
+	}
+
+	err = c.Init(ctx)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	_, err = me.ChaosExperimentsRunsExtractor(context.Background())
+	ctx = context.Background()
+
+	ce, err := me.ChaosExperimentsExtractor(ctx)
+	if err != nil {
+		log.Fatal(err)
+	}
+	err = c.SaveChaosExperiments(ctx, ce)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	cer, err := me.ChaosExperimentsRunsExtractor(ctx)
+	if err != nil {
+		log.Fatal(err)
+	}
+	err = c.SaveChaosExperimentRuns(ctx, cer)
 	if err != nil {
 		log.Fatal(err)
 	}

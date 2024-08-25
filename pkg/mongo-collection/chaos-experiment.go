@@ -24,7 +24,7 @@ type ChaosExperiment struct {
 	Revision                   []ChaosExperimentRevision         `bson:"revision"`
 	IsCustomExperiment         bool                              `bson:"is_custom_experiment"`
 	RecentExperimentRunDetails []ChaosExperimentRecentRunDetails `bson:"recent_experiment_run_details"`
-	TotalExperimentRuns        bool                              `bson:"total_experiment_runs"`
+	TotalExperimentRuns        int                               `bson:"total_experiment_runs"`
 }
 
 type ChaosExperimentRevision struct {

@@ -1,0 +1,13 @@
+version: "3.9"
+
+services:
+  postgres_order_api:
+    image: postgres:alpine3.19
+    environment:
+      POSTGRES_PASSWORD: litmus
+      POSTGRES_USER: litmus
+      POSTGRES_DB: litmus
+    ports:
+      - 5433:5432
+    volumes:
+      - ./docker-entrypoint-initdb:/docker-entrypoint-initdb.d/
