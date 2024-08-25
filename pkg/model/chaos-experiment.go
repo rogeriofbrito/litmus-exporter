@@ -40,9 +40,98 @@ type ChaosExperimentRevision struct {
 }
 
 type ChaosExperimentManifest struct {
+	ID                   uuid.UUID                       `gorm:"column:id;type:uuid;default:uuid_generate_v4();primaryKey"`
+	ExperimentRevisionID uuid.UUID                       `gorm:"column:experiment_revision_id"`
+	Kind                 string                          `gorm:"column:kind"`
+	APIVersion           string                          `gorm:"column:api_version"`
+	Metadata             ChaosExperimentManifestMetadata `gorm:"constraint:OnUpdate:CASCADE,OnDelete:CASCADE;foreignKey:experiment_manifest_id"`
+	Spec                 ChaosExperimentManifestSpec     `gorm:"constraint:OnUpdate:CASCADE,OnDelete:CASCADE;foreignKey:experiment_manifest_id"`
+	Status               ChaosExperimentManifestStatus   `gorm:"constraint:OnUpdate:CASCADE,OnDelete:CASCADE;foreignKey:experiment_manifest_id"`
+}
+
+type ChaosExperimentManifestMetadata struct {
+	ID                   uuid.UUID                             `gorm:"column:id;type:uuid;default:uuid_generate_v4();primaryKey"`
+	ExperimentManifestID uuid.UUID                             `gorm:"column:experiment_manifest_id"`
+	Name                 string                                `gorm:"column:name"`
+	CreationTimestamp    int64                                 `gorm:"column:creation_timestamp"`
+	Labels               ChaosExperimentManifestMetadataLabels `gorm:"constraint:OnUpdate:CASCADE,OnDelete:CASCADE;foreignKey:experiment_manifest_metadata_id"`
+}
+
+type ChaosExperimentManifestMetadataLabels struct {
+	ID                           uuid.UUID `gorm:"column:id;type:uuid;default:uuid_generate_v4();primaryKey"`
+	ExperimentManifestMetadataID uuid.UUID `gorm:"column:experiment_manifest_metadata_id"`
+	InfraID                      string    `gorm:"column:infra_id"`
+	RevisionID                   string    `gorm:"column:revision_id"`
+	WorkflowID                   string    `gorm:"column:workflow_id"`
+	ControllerInstanceID         string    `gorm:"column:controller_instance_id"`
+}
+
+type ChaosExperimentManifestSpec struct {
+	ID                   uuid.UUID                                  `gorm:"column:id;type:uuid;default:uuid_generate_v4();primaryKey"`
+	ExperimentManifestID uuid.UUID                                  `gorm:"column:experiment_manifest_id"`
+	Templates            []ChaosExperimentManifestSpecTemplate      `gorm:"foreignKey:experiment_manifest_spec_id"`
+	Entrypoint           string                                     `gorm:"column:entrypoint"`
+	Arguments            ChaosExperimentManifestSpecArguments       `gorm:"constraint:OnUpdate:CASCADE,OnDelete:CASCADE;foreignKey:experiment_manifest_spec_id"`
+	ServiceAccountName   string                                     `gorm:"column:serviceAccountName"`
+	PodGC                ChaosExperimentManifestSpecPodGC           `gorm:"constraint:OnUpdate:CASCADE,OnDelete:CASCADE;foreignKey:experiment_manifest_spec_id"`
+	SecurityContext      ChaosExperimentManifestSpecSecurityContext `gorm:"constraint:OnUpdate:CASCADE,OnDelete:CASCADE;foreignKey:experiment_manifest_spec_id"`
+}
+
+type ChaosExperimentManifestSpecTemplate struct {
+	ID                       uuid.UUID                                `gorm:"column:id;type:uuid;default:uuid_generate_v4();primaryKey"`
+	ExperimentManifestSpecID uuid.UUID                                `gorm:"column:experiment_manifest_spec_id"`
+	Name                     string                                   `gorm:"column:name"`
+	Steps                    ChaosExperimentManifestSpecTemplateSteps `gorm:"constraint:OnUpdate:CASCADE,OnDelete:CASCADE;foreignKey:experiment_manifest_spec_template_id"`
+	Container                ChaosExperimentManifestSpecContainer     `gorm:"constraint:OnUpdate:CASCADE,OnDelete:CASCADE;foreignKey:experiment_manifest_spec_template_id"`
+}
+
+type ChaosExperimentManifestSpecTemplateSteps struct {
+	ID                               uuid.UUID `gorm:"column:id;type:uuid;default:uuid_generate_v4();primaryKey"`
+	ExperimentManifestSpecTemplateID uuid.UUID `gorm:"column:experiment_manifest_spec_template_id"`
+	Name                             string    `gorm:"column:name"`
+	Template                         string    `gorm:"column:template"`
+}
+
+type ChaosExperimentManifestSpecContainer struct {
+	ID                               uuid.UUID `gorm:"column:id;type:uuid;default:uuid_generate_v4();primaryKey"`
+	ExperimentManifestSpecTemplateID uuid.UUID `gorm:"column:experiment_manifest_spec_template_id"`
+	Name                             string    `gorm:"column:name"`
+	Image                            string    `gorm:"column:image"`
+	Command                          string    `gorm:"column:command"`
+	Args                             string    `gorm:"column:args"`
+}
+
+type ChaosExperimentManifestSpecArguments struct {
+	ID                       uuid.UUID                                       `gorm:"column:id;type:uuid;default:uuid_generate_v4();primaryKey"`
+	ExperimentManifestSpecID uuid.UUID                                       `gorm:"column:experiment_manifest_spec_id"`
+	Parameters               []ChaosExperimentManifestSpecArgumentsParameter `gorm:"foreignKey:experiment_manifest_spec_arguments_id"`
+}
+
+type ChaosExperimentManifestSpecArgumentsParameter struct {
+	ID                                uuid.UUID `gorm:"column:id;type:uuid;default:uuid_generate_v4();primaryKey"`
+	ExperimentManifestSpecArgumentsID uuid.UUID `gorm:"column:experiment_manifest_spec_arguments_id"`
+	Name                              string    `gorm:"column:name"`
+	Value                             string    `gorm:"column:value"`
+}
+
+type ChaosExperimentManifestSpecPodGC struct {
+	ID                       uuid.UUID `gorm:"column:id;type:uuid;default:uuid_generate_v4();primaryKey"`
+	ExperimentManifestSpecID uuid.UUID `gorm:"column:experiment_manifest_spec_id"`
+	Strategy                 string    `gorm:"column:strategy"`
+}
+
+type ChaosExperimentManifestSpecSecurityContext struct {
+	ID                       uuid.UUID `gorm:"column:id;type:uuid;default:uuid_generate_v4();primaryKey"`
+	ExperimentManifestSpecID uuid.UUID `gorm:"column:experiment_manifest_spec_id"`
+	RunAsUser                int       `gorm:"column:run_as_user"`
+	RunAsNonRoot             bool      `gorm:"column:run_as_non_root"`
+}
+
+type ChaosExperimentManifestStatus struct {
 	ID                   uuid.UUID `gorm:"column:id;type:uuid;default:uuid_generate_v4();primaryKey"`
-	ExperimentRevisionID uuid.UUID `gorm:"column:experiment_revision_id"`
-	Kind                 string    `gorm:"column:kind"`
+	ExperimentManifestID uuid.UUID `gorm:"column:experiment_manifest_id"`
+	StartedAt            int64     `gorm:"column:started_at"`
+	FinishedAt           int64     `gorm:"column:finished_at"`
 }
 
 type ChaosExperimentRecentRunDetails struct {

@@ -41,8 +41,8 @@ type ChaosExperimentManifestSpecTemplate struct {
 }
 
 type ChaosExperimentManifestStatus struct {
-	StartedAt  interface{} `json:"startedAt"`
-	FinishedAt interface{} `json:"finishedAt"`
+	StartedAt  int64 `json:"startedAt"`
+	FinishedAt int64 `json:"finishedAt"`
 }
 
 type ChaosExperimentManifestSpecTemplateSteps [][]struct {

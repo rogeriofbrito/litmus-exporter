@@ -6,6 +6,7 @@ import (
 	"os"
 	"strings"
 
+	jsonfield "github.com/rogeriofbrito/litmus-exporter/pkg/json-field"
 	"github.com/rogeriofbrito/litmus-exporter/pkg/model"
 	mongocollection "github.com/rogeriofbrito/litmus-exporter/pkg/mongo-collection"
 	"gorm.io/driver/postgres"
@@ -29,6 +30,17 @@ func (pc PostgresConnector) Init(ctx context.Context) error {
 		&model.User{},
 		&model.ChaosExperimentRevision{},
 		&model.ChaosExperimentManifest{},
+		&model.ChaosExperimentManifestMetadata{},
+		&model.ChaosExperimentManifestMetadataLabels{},
+		&model.ChaosExperimentManifestSpec{},
+		&model.ChaosExperimentManifestSpecTemplate{},
+		&model.ChaosExperimentManifestSpecTemplateSteps{},
+		&model.ChaosExperimentManifestSpecContainer{},
+		&model.ChaosExperimentManifestSpecArguments{},
+		&model.ChaosExperimentManifestSpecArgumentsParameter{},
+		&model.ChaosExperimentManifestSpecPodGC{},
+		&model.ChaosExperimentManifestSpecSecurityContext{},
+		&model.ChaosExperimentManifestStatus{},
 		&model.ChaosExperimentRecentRunDetails{},
 		&model.Probe{},
 	)
@@ -45,13 +57,88 @@ func (pc PostgresConnector) SaveChaosExperiments(ctx context.Context, ces []mong
 		return err
 	}
 
+	parametersConv := func(c []jsonfield.ChaosExperimentManifestSpecArgumentsParameter) []model.ChaosExperimentManifestSpecArgumentsParameter {
+		var m []model.ChaosExperimentManifestSpecArgumentsParameter
+		for _, ci := range c {
+			m = append(m, model.ChaosExperimentManifestSpecArgumentsParameter{
+				Name:  ci.Name,
+				Value: ci.Value,
+			})
+		}
+		return m
+	}
+
+	templatesConv := func(c []jsonfield.ChaosExperimentManifestSpecTemplate) []model.ChaosExperimentManifestSpecTemplate {
+		getStepName := func(steps jsonfield.ChaosExperimentManifestSpecTemplateSteps) string {
+			if len(steps) == 0 {
+				return ""
+			}
+			return steps[0][0].Name
+		}
+
+		getStepTemplate := func(steps jsonfield.ChaosExperimentManifestSpecTemplateSteps) string {
+			if len(steps) == 0 {
+				return ""
+			}
+			return steps[0][0].Template
+		}
+
+		var m []model.ChaosExperimentManifestSpecTemplate
+		for _, ci := range c {
+			m = append(m, model.ChaosExperimentManifestSpecTemplate{
+				Name: ci.Name,
+				Steps: model.ChaosExperimentManifestSpecTemplateSteps{
+					Name:     getStepName(ci.Steps),
+					Template: getStepTemplate(ci.Steps),
+				},
+				Container: model.ChaosExperimentManifestSpecContainer{
+					Name:    ci.Container.Name,
+					Image:   ci.Container.Image,
+					Command: strings.Join(ci.Container.Command, ","),
+					Args:    strings.Join(ci.Container.Args, ","),
+				},
+			})
+		}
+		return m
+	}
+
 	experimentRevisionConv := func(c []mongocollection.ChaosExperimentRevision) []model.ChaosExperimentRevision {
 		var m []model.ChaosExperimentRevision
 		for _, ci := range c {
 			m = append(m, model.ChaosExperimentRevision{
 				RevisionID: ci.RevisionId,
 				ExperimentManifest: model.ChaosExperimentManifest{
-					Kind: ci.ExperimentManifest.Kind,
+					Kind:       ci.ExperimentManifest.Kind,
+					APIVersion: ci.ExperimentManifest.APIVersion,
+					Metadata: model.ChaosExperimentManifestMetadata{
+						Name:              ci.ExperimentManifest.Metadata.Name,
+						CreationTimestamp: ci.ExperimentManifest.Metadata.CreationTimestamp,
+						Labels: model.ChaosExperimentManifestMetadataLabels{
+							InfraID:              ci.ExperimentManifest.Metadata.Labels.InfraID,
+							RevisionID:           ci.ExperimentManifest.Metadata.Labels.RevisionID,
+							WorkflowID:           ci.ExperimentManifest.Metadata.Labels.WorkflowID,
+							ControllerInstanceID: ci.ExperimentManifest.Metadata.Labels.WorkflowsArgoprojIoControllerInstanceid,
+						},
+					},
+					Spec: model.ChaosExperimentManifestSpec{
+						Templates:  templatesConv(ci.ExperimentManifest.Spec.Templates),
+						Entrypoint: ci.ExperimentManifest.Spec.Entrypoint,
+						Arguments: model.ChaosExperimentManifestSpecArguments{
+							Parameters: parametersConv(ci.ExperimentManifest.Spec.Arguments.Parameters),
+						},
+						ServiceAccountName: ci.ExperimentManifest.Spec.ServiceAccountName,
+						PodGC: model.ChaosExperimentManifestSpecPodGC{
+							Strategy: ci.ExperimentManifest.Spec.PodGC.Strategy,
+						},
+						SecurityContext: model.ChaosExperimentManifestSpecSecurityContext{
+							RunAsUser:    ci.ExperimentManifest.Spec.SecurityContext.RunAsUser,
+							RunAsNonRoot: ci.ExperimentManifest.Spec.SecurityContext.RunAsNonRoot,
+						},
+					},
+					Status: model.ChaosExperimentManifestStatus{
+						StartedAt:  ci.ExperimentManifest.Status.StartedAt,
+						FinishedAt: ci.ExperimentManifest.Status.FinishedAt,
+					},
 				},
 			})
 		}
