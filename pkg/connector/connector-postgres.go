@@ -9,6 +9,8 @@ import (
 	jsonfield "github.com/rogeriofbrito/litmus-exporter/pkg/json-field"
 	"github.com/rogeriofbrito/litmus-exporter/pkg/model"
 	mongocollection "github.com/rogeriofbrito/litmus-exporter/pkg/mongo-collection"
+	yamlfield "github.com/rogeriofbrito/litmus-exporter/pkg/yaml-field"
+	"gopkg.in/yaml.v2"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )
@@ -30,9 +32,9 @@ func (pc PostgresConnector) Init(ctx context.Context) error {
 		&model.User{},
 		&model.Revision{},
 		&model.ExperimentManifest{},
-		&model.Metadata{},
+		&model.ManifestMetadata{},
 		&model.Labels{},
-		&model.Spec{},
+		&model.ManifestSpec{},
 		&model.Template{},
 		&model.Steps{},
 		&model.Container{},
@@ -43,6 +45,15 @@ func (pc PostgresConnector) Init(ctx context.Context) error {
 		&model.Status{},
 		&model.RecentExperimentRunDetail{},
 		&model.Probe{},
+		&model.ChaosExperimentYaml{},
+		&model.Description{},
+		&model.YamlMetadata{},
+		&model.MetadataLabels{},
+		&model.YamlSpec{},
+		&model.Definition{},
+		&model.Permission{},
+		&model.Env{},
+		&model.DefinitionLabels{},
 	)
 	if err != nil {
 		return err
@@ -102,6 +113,81 @@ func (pc PostgresConnector) SaveChaosExperiments(ctx context.Context, ces []mong
 		return m
 	}
 
+	chaosExperimentYamlsConv := func(ce mongocollection.Revision) []model.ChaosExperimentYaml {
+		permissionsConv := func(permissions []yamlfield.Permission) []model.Permission {
+			var m []model.Permission
+			for _, p := range permissions {
+				m = append(m, model.Permission{
+					APIGroups: strings.Join(p.APIGroups, ","),
+					Resources: strings.Join(p.Resources, ","),
+					Verbs:     strings.Join(p.Verbs, ","),
+				})
+			}
+			return m
+		}
+
+		envConv := func(envs []yamlfield.Env) []model.Env {
+			var m []model.Env
+			for _, e := range envs {
+				m = append(m, model.Env{
+					Name:  e.Name,
+					Value: e.Value,
+				})
+			}
+			return m
+		}
+
+		for _, t := range ce.ExperimentManifest.Spec.Templates {
+			if t.Name == "install-chaos-faults" {
+				var mces []model.ChaosExperimentYaml
+				for _, a := range t.Inputs.Artifacts {
+					var ce yamlfield.ChaosExperiment
+					err := yaml.Unmarshal([]byte(a.Raw.Data), &ce)
+					if err != nil {
+						return nil
+					}
+					mces = append(mces, model.ChaosExperimentYaml{
+						APIVersion: ce.APIVersion,
+						Description: model.Description{
+							Message: ce.Description.Message,
+						},
+						Kind: ce.Kind,
+						Metadata: model.YamlMetadata{
+							Name: ce.Metadata.Name,
+							Labels: model.MetadataLabels{
+								Name:                     ce.Metadata.Labels.Name,
+								AppKubernetesIoPartOf:    ce.Metadata.Labels.AppKubernetesIoPartOf,
+								AppKubernetesIoComponent: ce.Metadata.Labels.AppKubernetesIoComponent,
+								AppKubernetesIoVersion:   ce.Metadata.Labels.AppKubernetesIoVersion,
+							},
+						},
+						Spec: model.YamlSpec{
+							Definition: model.Definition{
+								Scope:           ce.Spec.Definition.Scope,
+								Permissions:     permissionsConv(ce.Spec.Definition.Permissions),
+								Image:           ce.Spec.Definition.Image,
+								ImagePullPolicy: ce.Spec.Definition.ImagePullPolicy,
+								Args:            strings.Join(ce.Spec.Definition.Args, ","),
+								Command:         strings.Join(ce.Spec.Definition.Command, ","),
+								Env:             envConv(ce.Spec.Definition.Env),
+								Labels: model.DefinitionLabels{
+									Name:                           ce.Spec.Definition.Labels.Name,
+									AppKubernetesIoPartOf:          ce.Spec.Definition.Labels.AppKubernetesIoPartOf,
+									AppKubernetesIoComponent:       ce.Spec.Definition.Labels.AppKubernetesIoComponent,
+									AppKubernetesIoRuntimeAPIUsage: ce.Spec.Definition.Labels.AppKubernetesIoRuntimeAPIUsage,
+									AppKubernetesIoVersion:         ce.Spec.Definition.Labels.AppKubernetesIoVersion,
+								},
+							},
+						},
+					})
+				}
+				return mces
+			}
+		}
+
+		return nil
+	}
+
 	revisionConv := func(c []mongocollection.Revision) []model.Revision {
 		var m []model.Revision
 		for _, ci := range c {
@@ -110,7 +196,7 @@ func (pc PostgresConnector) SaveChaosExperiments(ctx context.Context, ces []mong
 				ExperimentManifest: model.ExperimentManifest{
 					Kind:       ci.ExperimentManifest.Kind,
 					APIVersion: ci.ExperimentManifest.APIVersion,
-					Metadata: model.Metadata{
+					Metadata: model.ManifestMetadata{
 						Name:              ci.ExperimentManifest.Metadata.Name,
 						CreationTimestamp: ci.ExperimentManifest.Metadata.CreationTimestamp,
 						Labels: model.Labels{
@@ -120,7 +206,7 @@ func (pc PostgresConnector) SaveChaosExperiments(ctx context.Context, ces []mong
 							ControllerInstanceID: ci.ExperimentManifest.Metadata.Labels.WorkflowsArgoprojIoControllerInstanceid,
 						},
 					},
-					Spec: model.Spec{
+					Spec: model.ManifestSpec{
 						Templates:  templatesConv(ci.ExperimentManifest.Spec.Templates),
 						Entrypoint: ci.ExperimentManifest.Spec.Entrypoint,
 						Arguments: model.Arguments{
@@ -140,6 +226,7 @@ func (pc PostgresConnector) SaveChaosExperiments(ctx context.Context, ces []mong
 						FinishedAt: ci.ExperimentManifest.Status.FinishedAt,
 					},
 				},
+				ChaosExperimentYamls: chaosExperimentYamlsConv(ci),
 			})
 		}
 		return m

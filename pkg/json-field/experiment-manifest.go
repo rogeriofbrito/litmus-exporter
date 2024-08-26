@@ -1,14 +1,14 @@
 package jsonfield
 
 type ExperimentManifest struct {
-	Kind       string   `json:"kind"`
-	APIVersion string   `json:"apiVersion"`
-	Metadata   Metadata `json:"metadata"`
-	Spec       Spec     `json:"spec"`
-	Status     Status   `json:"status"`
+	Kind       string                     `json:"kind"`
+	APIVersion string                     `json:"apiVersion"`
+	Metadata   ExperimentManifestMetadata `json:"metadata"`
+	Spec       Spec                       `json:"spec"`
+	Status     Status                     `json:"status"`
 }
 
-type Metadata struct {
+type ExperimentManifestMetadata struct {
 	Name              string `json:"name"`
 	Namespace         string `json:"namespace"`
 	CreationTimestamp int64  `json:"creationTimestamp"`
@@ -32,12 +32,32 @@ type Spec struct {
 }
 
 type Template struct {
-	Name      string    `json:"name"`
-	Inputs    struct{}  `json:"inputs"`
-	Outputs   struct{}  `json:"outputs"`
-	Metadata  struct{}  `json:"metadata"`
-	Steps     Steps     `json:"steps,omitempty"`
-	Container Container `json:"container,omitempty"`
+	Name      string           `json:"name"`
+	Inputs    Inputs           `json:"inputs"`
+	Outputs   Outputs          `json:"outputs"`
+	Metadata  TemplateMetadata `json:"metadata"`
+	Steps     Steps            `json:"steps,omitempty"`
+	Container Container        `json:"container,omitempty"`
+}
+
+type Inputs struct {
+	Artifacts []Artifact `json:"artifacts"`
+}
+
+type Artifact struct {
+	Name string `json:"name"`
+	Path string `json:"path"`
+	Raw  Raw    `json:"raw"`
+}
+
+type Raw struct {
+	Data string `json:"data"`
+}
+
+type Outputs struct {
+}
+
+type TemplateMetadata struct {
 }
 
 type Status struct {
