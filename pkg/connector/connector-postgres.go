@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"strings"
+	"time"
 
 	jsonfield "github.com/rogeriofbrito/litmus-exporter/pkg/json-field"
 	"github.com/rogeriofbrito/litmus-exporter/pkg/model"
@@ -78,6 +79,14 @@ func (pc PostgresConnector) SaveChaosExperiments(ctx context.Context, ces []mong
 		return err
 	}
 
+	timeConv := func(t int64) *time.Time {
+		if t == 0 {
+			return nil
+		}
+		time := time.Unix(t/1000, t%1000)
+		return &time
+	}
+
 	parametersConv := func(c []jsonfield.Parameter) []model.Parameter {
 		var m []model.Parameter
 		for _, ci := range c {
@@ -147,14 +156,14 @@ func (pc PostgresConnector) SaveChaosExperiments(ctx context.Context, ces []mong
 			return m
 		}
 
+		var mces []model.ChaosExperimentYaml
 		for _, t := range ce.ExperimentManifest.Spec.Templates {
 			if t.Name == "install-chaos-faults" {
-				var mces []model.ChaosExperimentYaml
 				for _, a := range t.Inputs.Artifacts {
 					var ce yamlfield.ChaosExperiment
 					err := yaml.Unmarshal([]byte(a.Raw.Data), &ce)
 					if err != nil {
-						return nil
+						panic(err)
 					}
 					mces = append(mces, model.ChaosExperimentYaml{
 						APIVersion: ce.APIVersion,
@@ -191,11 +200,9 @@ func (pc PostgresConnector) SaveChaosExperiments(ctx context.Context, ces []mong
 						},
 					})
 				}
-				return mces
 			}
 		}
-
-		return nil
+		return mces
 	}
 
 	chaosEngineYamlsConv := func(ce mongocollection.Revision) []model.ChaosEngineYaml {
@@ -225,14 +232,14 @@ func (pc PostgresConnector) SaveChaosExperiments(ctx context.Context, ces []mong
 			return m
 		}
 
+		var mces []model.ChaosEngineYaml
 		for _, t := range ce.ExperimentManifest.Spec.Templates {
 			if strings.Contains(t.Container.Image, "litmus-checker") {
-				var mces []model.ChaosEngineYaml
 				for _, a := range t.Inputs.Artifacts {
 					var ce yamlfield.ChaosEngine
 					err := yaml.Unmarshal([]byte(a.Raw.Data), &ce)
 					if err != nil {
-						return nil
+						panic(err)
 					}
 					mces = append(mces, model.ChaosEngineYaml{
 						APIVersion: ce.APIVersion,
@@ -260,10 +267,10 @@ func (pc PostgresConnector) SaveChaosExperiments(ctx context.Context, ces []mong
 						},
 					})
 				}
-				return mces
+
 			}
 		}
-		return nil
+		return mces
 	}
 
 	revisionConv := func(c []mongocollection.Revision) []model.Revision {
@@ -276,7 +283,7 @@ func (pc PostgresConnector) SaveChaosExperiments(ctx context.Context, ces []mong
 					APIVersion: ci.ExperimentManifest.APIVersion,
 					Metadata: model.ManifestMetadata{
 						Name:              ci.ExperimentManifest.Metadata.Name,
-						CreationTimestamp: ci.ExperimentManifest.Metadata.CreationTimestamp,
+						CreationTimestamp: timeConv(ci.ExperimentManifest.Metadata.CreationTimestamp),
 						Labels: model.Labels{
 							InfraID:              ci.ExperimentManifest.Metadata.Labels.InfraID,
 							RevisionID:           ci.ExperimentManifest.Metadata.Labels.RevisionID,
@@ -300,8 +307,8 @@ func (pc PostgresConnector) SaveChaosExperiments(ctx context.Context, ces []mong
 						},
 					},
 					Status: model.Status{
-						StartedAt:  ci.ExperimentManifest.Status.StartedAt,
-						FinishedAt: ci.ExperimentManifest.Status.FinishedAt,
+						StartedAt:  timeConv(ci.ExperimentManifest.Status.StartedAt),
+						FinishedAt: timeConv(ci.ExperimentManifest.Status.FinishedAt),
 					},
 				},
 				ChaosExperimentYamls: chaosExperimentYamlsConv(ci),
@@ -326,8 +333,8 @@ func (pc PostgresConnector) SaveChaosExperiments(ctx context.Context, ces []mong
 		var m []model.RecentExperimentRunDetail
 		for _, ci := range c {
 			m = append(m, model.RecentExperimentRunDetail{
-				UpdatedAt: ci.UpdatedAt,
-				CreatedAt: ci.CreatedAt,
+				UpdatedAt: timeConv(ci.UpdatedAt),
+				CreatedAt: timeConv(ci.CreatedAt),
 				/*
 					CreatedBy: model.User{
 						UserID:   ci.CreatedBy.UserID,
@@ -360,8 +367,8 @@ func (pc PostgresConnector) SaveChaosExperiments(ctx context.Context, ces []mong
 			Name:        ce.Name,
 			Description: ce.Description,
 			Tags:        strings.Join(ce.Tags, ","),
-			UpdatedAt:   ce.UpdatedAt,
-			CreatedAt:   ce.CreatedAt,
+			UpdatedAt:   timeConv(ce.UpdatedAt),
+			CreatedAt:   timeConv(ce.CreatedAt),
 			/*
 				UpdatedBy: model.User{
 					UserID:   ce.UpdatedBy.UserID,

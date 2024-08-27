@@ -1,17 +1,19 @@
 package model
 
 import (
+	"time"
+
 	"github.com/google/uuid"
 )
 
 type ChaosExperiment struct {
-	ID          uuid.UUID `gorm:"column:id;type:uuid;default:uuid_generate_v4();primaryKey"`
-	MongoID     string    `gorm:"column:mongo_id"`
-	Name        string    `gorm:"column:name"`
-	Description string    `gorm:"column:description"`
-	Tags        string    `gorm:"column:tags"`
-	UpdatedAt   int64     `gorm:"column:updated_at"`
-	CreatedAt   int64     `gorm:"column:created_at"`
+	ID          uuid.UUID  `gorm:"column:id;type:uuid;default:uuid_generate_v4();primaryKey"`
+	MongoID     string     `gorm:"column:mongo_id"`
+	Name        string     `gorm:"column:name"`
+	Description string     `gorm:"column:description"`
+	Tags        string     `gorm:"column:tags"`
+	UpdatedAt   *time.Time `gorm:"column:updated_at"`
+	CreatedAt   *time.Time `gorm:"column:created_at"`
 	//UpdatedBy                  User                              `gorm:"constraint:OnUpdate:CASCADE,OnDelete:CASCADE;foreignKey:id"`
 	IsRemoved                  bool                        `gorm:"column:is_removed"`
 	ProjectID                  string                      `gorm:"column:project_id"`
@@ -52,11 +54,11 @@ type ExperimentManifest struct {
 }
 
 type ManifestMetadata struct {
-	ID                   uuid.UUID `gorm:"column:id;type:uuid;default:uuid_generate_v4();primaryKey"`
-	ExperimentManifestID uuid.UUID `gorm:"column:experiment_manifest_id"`
-	Name                 string    `gorm:"column:name"`
-	CreationTimestamp    int64     `gorm:"column:creation_timestamp"`
-	Labels               Labels    `gorm:"constraint:OnUpdate:CASCADE,OnDelete:CASCADE;foreignKey:experiment_manifest_metadata_id"`
+	ID                   uuid.UUID  `gorm:"column:id;type:uuid;default:uuid_generate_v4();primaryKey"`
+	ExperimentManifestID uuid.UUID  `gorm:"column:experiment_manifest_id"`
+	Name                 string     `gorm:"column:name"`
+	CreationTimestamp    *time.Time `gorm:"column:creation_timestamp"`
+	Labels               Labels     `gorm:"constraint:OnUpdate:CASCADE,OnDelete:CASCADE;foreignKey:experiment_manifest_metadata_id"`
 }
 
 type Labels struct {
@@ -130,17 +132,17 @@ type SecurityContext struct {
 }
 
 type Status struct {
-	ID                   uuid.UUID `gorm:"column:id;type:uuid;default:uuid_generate_v4();primaryKey"`
-	ExperimentManifestID uuid.UUID `gorm:"column:experiment_manifest_id"`
-	StartedAt            int64     `gorm:"column:started_at"`
-	FinishedAt           int64     `gorm:"column:finished_at"`
+	ID                   uuid.UUID  `gorm:"column:id;type:uuid;default:uuid_generate_v4();primaryKey"`
+	ExperimentManifestID uuid.UUID  `gorm:"column:experiment_manifest_id"`
+	StartedAt            *time.Time `gorm:"column:started_at"`
+	FinishedAt           *time.Time `gorm:"column:finished_at"`
 }
 
 type RecentExperimentRunDetail struct {
-	ID           uuid.UUID `gorm:"column:id;type:uuid;default:uuid_generate_v4();primaryKey"`
-	ExperimentID uuid.UUID `gorm:"column:experiment_id"`
-	UpdatedAt    int64     `gorm:"column:updated_at"`
-	CreatedAt    int64     `gorm:"column:created_at"`
+	ID           uuid.UUID  `gorm:"column:id;type:uuid;default:uuid_generate_v4();primaryKey"`
+	ExperimentID uuid.UUID  `gorm:"column:experiment_id"`
+	UpdatedAt    *time.Time `gorm:"column:updated_at"`
+	CreatedAt    *time.Time `gorm:"column:created_at"`
 	//CreatedBy       User      `gorm:"constraint:OnUpdate:CASCADE,OnDelete:CASCADE;foreignKey:id"`
 	//UpdatedBy       User      `gorm:"constraint:OnUpdate:CASCADE,OnDelete:CASCADE;foreignKey:id"`
 	IsRemoved       bool    `gorm:"column:is_removed"`
