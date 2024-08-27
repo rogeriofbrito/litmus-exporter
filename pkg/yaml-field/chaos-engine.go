@@ -8,48 +8,48 @@ type ChaosEngine struct {
 }
 
 type ChaosEngineMetadata struct {
-	Namespace    string                         `yaml:"namespace"`
-	Labels       ChaosEngineMetadataLabels      `yaml:"labels"`
-	Annotations  ChaosEngineMetadataAnnotations `yaml:"annotations"`
-	GenerateName string                         `yaml:"generateName"`
+	Namespace    string                 `yaml:"namespace"`
+	Labels       ChaosEngineLabels      `yaml:"labels"`
+	Annotations  ChaosEngineAnnotations `yaml:"annotations"`
+	GenerateName string                 `yaml:"generateName"`
 }
 
-type ChaosEngineMetadataLabels struct {
+type ChaosEngineLabels struct {
 	WorkflowRunID string `yaml:"workflow_run_id"`
 	WorkflowName  string `yaml:"workflow_name"`
 }
 
-type ChaosEngineMetadataAnnotations struct {
+type ChaosEngineAnnotations struct {
 	ProbeRef string `yaml:"probeRef"`
 }
 
 type ChaosEngineSpec struct {
-	EngineState         string                      `yaml:"engineState"`
-	Appinfo             ChaosEngineSpecAppInfo      `yaml:"appinfo"`
-	ChaosServiceAccount string                      `yaml:"chaosServiceAccount"`
-	Experiments         []ChaosEngineSpecExperiment `yaml:"experiments"`
+	EngineState         string                  `yaml:"engineState"`
+	Appinfo             ChaosEngineAppInfo      `yaml:"appinfo"`
+	ChaosServiceAccount string                  `yaml:"chaosServiceAccount"`
+	Experiments         []ChaosEngineExperiment `yaml:"experiments"`
 }
 
-type ChaosEngineSpecAppInfo struct {
+type ChaosEngineAppInfo struct {
 	Appns    string `yaml:"appns"`
 	Applabel string `yaml:"applabel"`
 	Appkind  string `yaml:"appkind"`
 }
 
-type ChaosEngineSpecExperiment struct {
-	Name string                        `yaml:"name"`
-	Spec ChaosEngineSpecExperimentSpec `yaml:"spec"`
+type ChaosEngineExperiment struct {
+	Name string                    `yaml:"name"`
+	Spec ChaosEngineExperimentSpec `yaml:"spec"`
 }
 
-type ChaosEngineSpecExperimentSpec struct {
-	Components ChaosEngineSpecExperimentSpecCompoments `yaml:"components"`
+type ChaosEngineExperimentSpec struct {
+	Components ChaosEngineCompoments `yaml:"components"`
 }
 
-type ChaosEngineSpecExperimentSpecCompoments struct {
-	Env []ChaosEngineSpecExperimentSpecCompomentsEnv `yaml:"env"`
+type ChaosEngineCompoments struct {
+	Env []ChaosEngineEnv `yaml:"env"`
 }
 
-type ChaosEngineSpecExperimentSpecCompomentsEnv struct {
+type ChaosEngineEnv struct {
 	Name  string `yaml:"name"`
 	Value string `yaml:"value"`
 }

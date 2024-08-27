@@ -136,7 +136,7 @@ func (pc PostgresConnector) SaveChaosExperiments(ctx context.Context, ces []mong
 			return m
 		}
 
-		envConv := func(envs []yamlfield.Env) []model.Env {
+		envConv := func(envs []yamlfield.ChaosExperimentEnv) []model.Env {
 			var m []model.Env
 			for _, e := range envs {
 				m = append(m, model.Env{
@@ -199,7 +199,7 @@ func (pc PostgresConnector) SaveChaosExperiments(ctx context.Context, ces []mong
 	}
 
 	chaosEngineYamlsConv := func(ce mongocollection.Revision) []model.ChaosEngineYaml {
-		envConv := func(envs []yamlfield.ChaosEngineSpecExperimentSpecCompomentsEnv) []model.ChaosEngineSpecExperimentSpecCompomentsEnv {
+		envConv := func(envs []yamlfield.ChaosEngineEnv) []model.ChaosEngineSpecExperimentSpecCompomentsEnv {
 			var m []model.ChaosEngineSpecExperimentSpecCompomentsEnv
 			for _, env := range envs {
 				m = append(m, model.ChaosEngineSpecExperimentSpecCompomentsEnv{
@@ -210,7 +210,7 @@ func (pc PostgresConnector) SaveChaosExperiments(ctx context.Context, ces []mong
 			return m
 		}
 
-		experimentsConv := func(exps []yamlfield.ChaosEngineSpecExperiment) []model.ChaosEngineSpecExperiment {
+		experimentsConv := func(exps []yamlfield.ChaosEngineExperiment) []model.ChaosEngineSpecExperiment {
 			var m []model.ChaosEngineSpecExperiment
 			for _, exp := range exps {
 				m = append(m, model.ChaosEngineSpecExperiment{

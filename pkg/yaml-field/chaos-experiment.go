@@ -1,23 +1,23 @@
 package yamlfield
 
 type ChaosExperiment struct {
-	APIVersion  string                  `yaml:"apiVersion"`
-	Description Description             `yaml:"description"`
-	Kind        string                  `yaml:"kind"`
-	Metadata    ChaosExperimentMetadata `yaml:"metadata"`
-	Spec        ChaosExperimentSpec     `yaml:"spec"`
+	APIVersion  string                     `yaml:"apiVersion"`
+	Description ChaosExperimentDescription `yaml:"description"`
+	Kind        string                     `yaml:"kind"`
+	Metadata    ChaosExperimentMetadata    `yaml:"metadata"`
+	Spec        ChaosExperimentSpec        `yaml:"spec"`
 }
 
-type Description struct {
+type ChaosExperimentDescription struct {
 	Message string `yaml:"message"`
 }
 
 type ChaosExperimentMetadata struct {
-	Name   string                        `yaml:"name"`
-	Labels ChaosExperimentMetadataLabels `yaml:"labels"`
+	Name   string                `yaml:"name"`
+	Labels ChaosExperimentLabels `yaml:"labels"`
 }
 
-type ChaosExperimentMetadataLabels struct {
+type ChaosExperimentLabels struct {
 	Name                     string `yaml:"name"`
 	AppKubernetesIoPartOf    string `yaml:"app.kubernetes.io/part-of"`
 	AppKubernetesIoComponent string `yaml:"app.kubernetes.io/component"`
@@ -25,7 +25,7 @@ type ChaosExperimentMetadataLabels struct {
 }
 
 type ChaosExperimentSpec struct {
-	Definition Definition `yaml:"definition"`
+	Definition ChaosExperimentDefinition `yaml:"definition"`
 }
 
 type Permission struct {
@@ -34,23 +34,23 @@ type Permission struct {
 	Verbs     []string `yaml:"verbs"`
 }
 
-type Env struct {
+type ChaosExperimentEnv struct {
 	Name  string `yaml:"name"`
 	Value string `yaml:"value"`
 }
 
-type Definition struct {
-	Scope           string           `yaml:"scope"`
-	Permissions     []Permission     `yaml:"permissions"`
-	Image           string           `yaml:"image"`
-	ImagePullPolicy string           `yaml:"imagePullPolicy"`
-	Args            []string         `yaml:"args"`
-	Command         []string         `yaml:"command"`
-	Env             []Env            `yaml:"env"`
-	Labels          DefinitionLabels `yaml:"labels"`
+type ChaosExperimentDefinition struct {
+	Scope           string                          `yaml:"scope"`
+	Permissions     []Permission                    `yaml:"permissions"`
+	Image           string                          `yaml:"image"`
+	ImagePullPolicy string                          `yaml:"imagePullPolicy"`
+	Args            []string                        `yaml:"args"`
+	Command         []string                        `yaml:"command"`
+	Env             []ChaosExperimentEnv            `yaml:"env"`
+	Labels          ChaosExperimentDefinitionLabels `yaml:"labels"`
 }
 
-type DefinitionLabels struct {
+type ChaosExperimentDefinitionLabels struct {
 	Name                           string `yaml:"name"`
 	AppKubernetesIoPartOf          string `yaml:"app.kubernetes.io/part-of"`
 	AppKubernetesIoComponent       string `yaml:"app.kubernetes.io/component"`
