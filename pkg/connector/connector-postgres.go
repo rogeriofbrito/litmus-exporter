@@ -9,6 +9,7 @@ import (
 
 	jsonfield "github.com/rogeriofbrito/litmus-exporter/pkg/json-field"
 	"github.com/rogeriofbrito/litmus-exporter/pkg/model"
+	model_chaos_engine_yaml "github.com/rogeriofbrito/litmus-exporter/pkg/model/chaos-engine-yaml"
 	model_chaos_experiment_yaml "github.com/rogeriofbrito/litmus-exporter/pkg/model/chaos-experiment-yaml"
 	mongocollection "github.com/rogeriofbrito/litmus-exporter/pkg/mongo-collection"
 	yamlfield "github.com/rogeriofbrito/litmus-exporter/pkg/yaml-field"
@@ -58,16 +59,16 @@ func (pc PostgresConnector) Init(ctx context.Context) error {
 		&model_chaos_experiment_yaml.ChaosExperimentYamlEnv{},
 		&model_chaos_experiment_yaml.ChaosExperimentYamlDefinitionLabels{},
 		//ChaosEngineYaml
-		&model.ChaosEngineYaml{},
-		&model.ChaosEngineMetadata{},
-		&model.ChaosEngineSpec{},
-		&model.ChaosEngineMetadataLabels{},
-		&model.ChaosEngineMetadataAnnotations{},
-		&model.ChaosEngineSpecAppInfo{},
-		&model.ChaosEngineSpecExperiment{},
-		&model.ChaosEngineSpecExperimentSpec{},
-		&model.ChaosEngineSpecExperimentSpecCompoments{},
-		&model.ChaosEngineSpecExperimentSpecCompomentsEnv{},
+		&model_chaos_engine_yaml.ChaosEngineYaml{},
+		&model_chaos_engine_yaml.ChaosEngineYamlMetadata{},
+		&model_chaos_engine_yaml.ChaosEngineYamlSpec{},
+		&model_chaos_engine_yaml.ChaosEngineYamlLabels{},
+		&model_chaos_engine_yaml.ChaosEngineYamlAnnotations{},
+		&model_chaos_engine_yaml.ChaosEngineYamlAppInfo{},
+		&model_chaos_engine_yaml.ChaosEngineYamlExperiment{},
+		&model_chaos_engine_yaml.ChaosEngineYamlExperimentSpec{},
+		&model_chaos_engine_yaml.ChaosEngineYamlCompoments{},
+		&model_chaos_engine_yaml.ChaosEngineYamlEnv{},
 	)
 	if err != nil {
 		return err
@@ -208,11 +209,11 @@ func (pc PostgresConnector) SaveChaosExperiments(ctx context.Context, ces []mong
 		return mces
 	}
 
-	chaosEngineYamlsConv := func(ce mongocollection.Revision) []model.ChaosEngineYaml {
-		envConv := func(envs []yamlfield.ChaosEngineEnv) []model.ChaosEngineSpecExperimentSpecCompomentsEnv {
-			var m []model.ChaosEngineSpecExperimentSpecCompomentsEnv
+	chaosEngineYamlsConv := func(ce mongocollection.Revision) []model_chaos_engine_yaml.ChaosEngineYaml {
+		envConv := func(envs []yamlfield.ChaosEngineEnv) []model_chaos_engine_yaml.ChaosEngineYamlEnv {
+			var m []model_chaos_engine_yaml.ChaosEngineYamlEnv
 			for _, env := range envs {
-				m = append(m, model.ChaosEngineSpecExperimentSpecCompomentsEnv{
+				m = append(m, model_chaos_engine_yaml.ChaosEngineYamlEnv{
 					Name:  env.Name,
 					Value: env.Value,
 				})
@@ -220,13 +221,13 @@ func (pc PostgresConnector) SaveChaosExperiments(ctx context.Context, ces []mong
 			return m
 		}
 
-		experimentsConv := func(exps []yamlfield.ChaosEngineExperiment) []model.ChaosEngineSpecExperiment {
-			var m []model.ChaosEngineSpecExperiment
+		experimentsConv := func(exps []yamlfield.ChaosEngineExperiment) []model_chaos_engine_yaml.ChaosEngineYamlExperiment {
+			var m []model_chaos_engine_yaml.ChaosEngineYamlExperiment
 			for _, exp := range exps {
-				m = append(m, model.ChaosEngineSpecExperiment{
+				m = append(m, model_chaos_engine_yaml.ChaosEngineYamlExperiment{
 					Name: exp.Name,
-					Spec: model.ChaosEngineSpecExperimentSpec{
-						Components: model.ChaosEngineSpecExperimentSpecCompoments{
+					Spec: model_chaos_engine_yaml.ChaosEngineYamlExperimentSpec{
+						Components: model_chaos_engine_yaml.ChaosEngineYamlCompoments{
 							Env: envConv(exp.Spec.Components.Env),
 						},
 					},
@@ -235,7 +236,7 @@ func (pc PostgresConnector) SaveChaosExperiments(ctx context.Context, ces []mong
 			return m
 		}
 
-		var mces []model.ChaosEngineYaml
+		var mces []model_chaos_engine_yaml.ChaosEngineYaml
 		for _, t := range ce.ExperimentManifest.Spec.Templates {
 			if strings.Contains(t.Container.Image, "litmus-checker") {
 				for _, a := range t.Inputs.Artifacts {
@@ -244,23 +245,23 @@ func (pc PostgresConnector) SaveChaosExperiments(ctx context.Context, ces []mong
 					if err != nil {
 						panic(err)
 					}
-					mces = append(mces, model.ChaosEngineYaml{
+					mces = append(mces, model_chaos_engine_yaml.ChaosEngineYaml{
 						APIVersion: ce.APIVersion,
 						Kind:       ce.Kind,
-						Metadata: model.ChaosEngineMetadata{
+						Metadata: model_chaos_engine_yaml.ChaosEngineYamlMetadata{
 							Namespace: ce.Metadata.Namespace,
-							Labels: model.ChaosEngineMetadataLabels{
+							Labels: model_chaos_engine_yaml.ChaosEngineYamlLabels{
 								WorkflowRunID: ce.Metadata.Labels.WorkflowRunID,
 								WorkflowName:  ce.Metadata.Labels.WorkflowName,
 							},
-							Annotations: model.ChaosEngineMetadataAnnotations{
+							Annotations: model_chaos_engine_yaml.ChaosEngineYamlAnnotations{
 								ProbeRef: ce.Metadata.Annotations.ProbeRef,
 							},
 							GenerateName: ce.Metadata.GenerateName,
 						},
-						Spec: model.ChaosEngineSpec{
+						Spec: model_chaos_engine_yaml.ChaosEngineYamlSpec{
 							EngineState: ce.Spec.EngineState,
-							Appinfo: model.ChaosEngineSpecAppInfo{
+							Appinfo: model_chaos_engine_yaml.ChaosEngineYamlAppInfo{
 								Appns:    ce.Spec.Appinfo.Appns,
 								Applabel: ce.Spec.Appinfo.Applabel,
 								Appkind:  ce.Spec.Appinfo.Appkind,
