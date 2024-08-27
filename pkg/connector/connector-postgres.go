@@ -9,6 +9,7 @@ import (
 
 	jsonfield "github.com/rogeriofbrito/litmus-exporter/pkg/json-field"
 	"github.com/rogeriofbrito/litmus-exporter/pkg/model"
+	model_chaos_experiment_yaml "github.com/rogeriofbrito/litmus-exporter/pkg/model/chaos-experiment-yaml"
 	mongocollection "github.com/rogeriofbrito/litmus-exporter/pkg/mongo-collection"
 	yamlfield "github.com/rogeriofbrito/litmus-exporter/pkg/yaml-field"
 	"gopkg.in/yaml.v2"
@@ -46,15 +47,17 @@ func (pc PostgresConnector) Init(ctx context.Context) error {
 		&model.Status{},
 		&model.RecentExperimentRunDetail{},
 		&model.Probe{},
-		&model.ChaosExperimentYaml{},
-		&model.Description{},
-		&model.YamlMetadata{},
-		&model.MetadataLabels{},
-		&model.YamlSpec{},
-		&model.Definition{},
-		&model.Permission{},
-		&model.Env{},
-		&model.DefinitionLabels{},
+		//ChaosExperimentYaml
+		&model_chaos_experiment_yaml.ChaosExperimentYaml{},
+		&model_chaos_experiment_yaml.CeyDescription{},
+		&model_chaos_experiment_yaml.CeyMetadata{},
+		&model_chaos_experiment_yaml.CeyLabels{},
+		&model_chaos_experiment_yaml.CeySpec{},
+		&model_chaos_experiment_yaml.CeyDefinition{},
+		&model_chaos_experiment_yaml.CeyPermission{},
+		&model_chaos_experiment_yaml.CeyEnv{},
+		&model_chaos_experiment_yaml.CeyDefinitionLabels{},
+		//ChaosEngineYaml
 		&model.ChaosEngineYaml{},
 		&model.ChaosEngineMetadata{},
 		&model.ChaosEngineSpec{},
@@ -132,11 +135,11 @@ func (pc PostgresConnector) SaveChaosExperiments(ctx context.Context, ces []mong
 		return m
 	}
 
-	chaosExperimentYamlsConv := func(ce mongocollection.Revision) []model.ChaosExperimentYaml {
-		permissionsConv := func(permissions []yamlfield.Permission) []model.Permission {
-			var m []model.Permission
+	chaosExperimentYamlsConv := func(ce mongocollection.Revision) []model_chaos_experiment_yaml.ChaosExperimentYaml {
+		permissionsConv := func(permissions []yamlfield.Permission) []model_chaos_experiment_yaml.CeyPermission {
+			var m []model_chaos_experiment_yaml.CeyPermission
 			for _, p := range permissions {
-				m = append(m, model.Permission{
+				m = append(m, model_chaos_experiment_yaml.CeyPermission{
 					APIGroups: strings.Join(p.APIGroups, ","),
 					Resources: strings.Join(p.Resources, ","),
 					Verbs:     strings.Join(p.Verbs, ","),
@@ -145,10 +148,10 @@ func (pc PostgresConnector) SaveChaosExperiments(ctx context.Context, ces []mong
 			return m
 		}
 
-		envConv := func(envs []yamlfield.ChaosExperimentEnv) []model.Env {
-			var m []model.Env
+		envConv := func(envs []yamlfield.ChaosExperimentEnv) []model_chaos_experiment_yaml.CeyEnv {
+			var m []model_chaos_experiment_yaml.CeyEnv
 			for _, e := range envs {
-				m = append(m, model.Env{
+				m = append(m, model_chaos_experiment_yaml.CeyEnv{
 					Name:  e.Name,
 					Value: e.Value,
 				})
@@ -156,7 +159,7 @@ func (pc PostgresConnector) SaveChaosExperiments(ctx context.Context, ces []mong
 			return m
 		}
 
-		var mces []model.ChaosExperimentYaml
+		var mces []model_chaos_experiment_yaml.ChaosExperimentYaml
 		for _, t := range ce.ExperimentManifest.Spec.Templates {
 			if t.Name == "install-chaos-faults" {
 				for _, a := range t.Inputs.Artifacts {
@@ -165,23 +168,23 @@ func (pc PostgresConnector) SaveChaosExperiments(ctx context.Context, ces []mong
 					if err != nil {
 						panic(err)
 					}
-					mces = append(mces, model.ChaosExperimentYaml{
+					mces = append(mces, model_chaos_experiment_yaml.ChaosExperimentYaml{
 						APIVersion: ce.APIVersion,
-						Description: model.Description{
+						Description: model_chaos_experiment_yaml.CeyDescription{
 							Message: ce.Description.Message,
 						},
 						Kind: ce.Kind,
-						Metadata: model.YamlMetadata{
+						Metadata: model_chaos_experiment_yaml.CeyMetadata{
 							Name: ce.Metadata.Name,
-							Labels: model.MetadataLabels{
+							Labels: model_chaos_experiment_yaml.CeyLabels{
 								Name:                     ce.Metadata.Labels.Name,
 								AppKubernetesIoPartOf:    ce.Metadata.Labels.AppKubernetesIoPartOf,
 								AppKubernetesIoComponent: ce.Metadata.Labels.AppKubernetesIoComponent,
 								AppKubernetesIoVersion:   ce.Metadata.Labels.AppKubernetesIoVersion,
 							},
 						},
-						Spec: model.YamlSpec{
-							Definition: model.Definition{
+						Spec: model_chaos_experiment_yaml.CeySpec{
+							Definition: model_chaos_experiment_yaml.CeyDefinition{
 								Scope:           ce.Spec.Definition.Scope,
 								Permissions:     permissionsConv(ce.Spec.Definition.Permissions),
 								Image:           ce.Spec.Definition.Image,
@@ -189,7 +192,7 @@ func (pc PostgresConnector) SaveChaosExperiments(ctx context.Context, ces []mong
 								Args:            strings.Join(ce.Spec.Definition.Args, ","),
 								Command:         strings.Join(ce.Spec.Definition.Command, ","),
 								Env:             envConv(ce.Spec.Definition.Env),
-								Labels: model.DefinitionLabels{
+								Labels: model_chaos_experiment_yaml.CeyDefinitionLabels{
 									Name:                           ce.Spec.Definition.Labels.Name,
 									AppKubernetesIoPartOf:          ce.Spec.Definition.Labels.AppKubernetesIoPartOf,
 									AppKubernetesIoComponent:       ce.Spec.Definition.Labels.AppKubernetesIoComponent,
