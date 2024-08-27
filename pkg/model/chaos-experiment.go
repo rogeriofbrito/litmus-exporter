@@ -38,7 +38,7 @@ type Revision struct {
 	RevisionID           string                `gorm:"column:revision_id"`
 	ExperimentManifest   ExperimentManifest    `gorm:"constraint:OnUpdate:CASCADE,OnDelete:CASCADE;foreignKey:experiment_revision_id"`
 	ChaosExperimentYamls []ChaosExperimentYaml `gorm:"foreignKey:experiment_revision_id"`
-	//ChaosEngineYamls
+	ChaosEngineYamls     []ChaosEngineYaml     `gorm:"foreignKey:experiment_revision_id"`
 }
 
 type ExperimentManifest struct {
@@ -235,4 +235,78 @@ type DefinitionLabels struct {
 	AppKubernetesIoComponent       string    `gorm:"column:component"`
 	AppKubernetesIoRuntimeAPIUsage string    `gorm:"column:runtime_api_usage"`
 	AppKubernetesIoVersion         string    `gorm:"column:version"`
+}
+
+type ChaosEngineYaml struct {
+	ID                   uuid.UUID           `gorm:"column:id;type:uuid;default:uuid_generate_v4();primaryKey"`
+	ExperimentRevisionID uuid.UUID           `gorm:"column:experiment_revision_id"`
+	APIVersion           string              `gorm:"column:api_version"`
+	Kind                 string              `gorm:"column:kind"`
+	Metadata             ChaosEngineMetadata `gorm:"constraint:OnUpdate:CASCADE,OnDelete:CASCADE;foreignKey:chaos_engine_yaml_id"`
+	Spec                 ChaosEngineSpec     `gorm:"constraint:OnUpdate:CASCADE,OnDelete:CASCADE;foreignKey:chaos_engine_yaml_id"`
+}
+
+type ChaosEngineMetadata struct {
+	ID                uuid.UUID                      `gorm:"column:id;type:uuid;default:uuid_generate_v4();primaryKey"`
+	ChaosEngineYamlID uuid.UUID                      `gorm:"column:chaos_engine_yaml_id"`
+	Namespace         string                         `gorm:"column:namespace"`
+	Labels            ChaosEngineMetadataLabels      `gorm:"constraint:OnUpdate:CASCADE,OnDelete:CASCADE;foreignKey:chaos_engine_metadata_id"`
+	Annotations       ChaosEngineMetadataAnnotations `gorm:"constraint:OnUpdate:CASCADE,OnDelete:CASCADE;foreignKey:chaos_engine_metadata_id"`
+	GenerateName      string                         `gorm:"column:generate_name"`
+}
+
+type ChaosEngineSpec struct {
+	ID                  uuid.UUID                   `gorm:"column:id;type:uuid;default:uuid_generate_v4();primaryKey"`
+	ChaosEngineYamlID   uuid.UUID                   `gorm:"column:chaos_engine_yaml_id"`
+	EngineState         string                      `gorm:"column:engine_state"`
+	Appinfo             ChaosEngineSpecAppInfo      `gorm:"constraint:OnUpdate:CASCADE,OnDelete:CASCADE;foreignKey:chaos_engine_spec_id"`
+	ChaosServiceAccount string                      `gorm:"column:chaos_service_account"`
+	Experiments         []ChaosEngineSpecExperiment `gorm:"foreignKey:chaos_engine_spec_id"`
+}
+
+type ChaosEngineMetadataLabels struct {
+	ID                    uuid.UUID `gorm:"column:id;type:uuid;default:uuid_generate_v4();primaryKey"`
+	ChaosEngineMetadataID uuid.UUID `gorm:"column:chaos_engine_metadata_id"`
+	WorkflowRunID         string    `gorm:"column:workflow_run_id"`
+	WorkflowName          string    `gorm:"column:workflow_name"`
+}
+
+type ChaosEngineMetadataAnnotations struct {
+	ID                    uuid.UUID `gorm:"column:id;type:uuid;default:uuid_generate_v4();primaryKey"`
+	ChaosEngineMetadataID uuid.UUID `gorm:"column:chaos_engine_metadata_id"`
+	ProbeRef              string    `gorm:"column:probe_ref"`
+}
+
+type ChaosEngineSpecAppInfo struct {
+	ID                uuid.UUID `gorm:"column:id;type:uuid;default:uuid_generate_v4();primaryKey"`
+	ChaosEngineSpecID uuid.UUID `gorm:"column:chaos_engine_spec_id"`
+	Appns             string    `gorm:"column:app_ns"`
+	Applabel          string    `gorm:"column:app_label"`
+	Appkind           string    `gorm:"column:app_kind"`
+}
+
+type ChaosEngineSpecExperiment struct {
+	ID                uuid.UUID                     `gorm:"column:id;type:uuid;default:uuid_generate_v4();primaryKey"`
+	ChaosEngineSpecID uuid.UUID                     `gorm:"column:chaos_engine_spec_id"`
+	Name              string                        `gorm:"column:name"`
+	Spec              ChaosEngineSpecExperimentSpec `gorm:"constraint:OnUpdate:CASCADE,OnDelete:CASCADE;foreignKey:chaos_engine_spec_experiment_id"`
+}
+
+type ChaosEngineSpecExperimentSpec struct {
+	ID                          uuid.UUID                               `gorm:"column:id;type:uuid;default:uuid_generate_v4();primaryKey"`
+	ChaosEngineSpecExperimentID uuid.UUID                               `gorm:"column:chaos_engine_spec_experiment_id"`
+	Components                  ChaosEngineSpecExperimentSpecCompoments `gorm:"constraint:OnUpdate:CASCADE,OnDelete:CASCADE;foreignKey:chaos_engine_spec_experiment_spec_id"`
+}
+
+type ChaosEngineSpecExperimentSpecCompoments struct {
+	ID                              uuid.UUID                                    `gorm:"column:id;type:uuid;default:uuid_generate_v4();primaryKey"`
+	ChaosEngineSpecExperimentSpecID uuid.UUID                                    `gorm:"column:chaos_engine_spec_experiment_spec_id"`
+	Env                             []ChaosEngineSpecExperimentSpecCompomentsEnv `gorm:"foreignKey:chaos_engine_spec_experiment_spec_components_id"`
+}
+
+type ChaosEngineSpecExperimentSpecCompomentsEnv struct {
+	ID                                        uuid.UUID `gorm:"column:id;type:uuid;default:uuid_generate_v4();primaryKey"`
+	ChaosEngineSpecExperimentSpecCompomentsID uuid.UUID `gorm:"column:chaos_engine_spec_experiment_spec_components_id"`
+	Name                                      string    `gorm:"column:name"`
+	Value                                     string    `gorm:"column:value"`
 }

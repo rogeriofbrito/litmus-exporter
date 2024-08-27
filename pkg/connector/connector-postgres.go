@@ -54,6 +54,16 @@ func (pc PostgresConnector) Init(ctx context.Context) error {
 		&model.Permission{},
 		&model.Env{},
 		&model.DefinitionLabels{},
+		&model.ChaosEngineYaml{},
+		&model.ChaosEngineMetadata{},
+		&model.ChaosEngineSpec{},
+		&model.ChaosEngineMetadataLabels{},
+		&model.ChaosEngineMetadataAnnotations{},
+		&model.ChaosEngineSpecAppInfo{},
+		&model.ChaosEngineSpecExperiment{},
+		&model.ChaosEngineSpecExperimentSpec{},
+		&model.ChaosEngineSpecExperimentSpecCompoments{},
+		&model.ChaosEngineSpecExperimentSpecCompomentsEnv{},
 	)
 	if err != nil {
 		return err
@@ -188,6 +198,74 @@ func (pc PostgresConnector) SaveChaosExperiments(ctx context.Context, ces []mong
 		return nil
 	}
 
+	chaosEngineYamlsConv := func(ce mongocollection.Revision) []model.ChaosEngineYaml {
+		envConv := func(envs []yamlfield.ChaosEngineSpecExperimentSpecCompomentsEnv) []model.ChaosEngineSpecExperimentSpecCompomentsEnv {
+			var m []model.ChaosEngineSpecExperimentSpecCompomentsEnv
+			for _, env := range envs {
+				m = append(m, model.ChaosEngineSpecExperimentSpecCompomentsEnv{
+					Name:  env.Name,
+					Value: env.Value,
+				})
+			}
+			return m
+		}
+
+		experimentsConv := func(exps []yamlfield.ChaosEngineSpecExperiment) []model.ChaosEngineSpecExperiment {
+			var m []model.ChaosEngineSpecExperiment
+			for _, exp := range exps {
+				m = append(m, model.ChaosEngineSpecExperiment{
+					Name: exp.Name,
+					Spec: model.ChaosEngineSpecExperimentSpec{
+						Components: model.ChaosEngineSpecExperimentSpecCompoments{
+							Env: envConv(exp.Spec.Components.Env),
+						},
+					},
+				})
+			}
+			return m
+		}
+
+		for _, t := range ce.ExperimentManifest.Spec.Templates {
+			if strings.Contains(t.Container.Image, "litmus-checker") {
+				var mces []model.ChaosEngineYaml
+				for _, a := range t.Inputs.Artifacts {
+					var ce yamlfield.ChaosEngine
+					err := yaml.Unmarshal([]byte(a.Raw.Data), &ce)
+					if err != nil {
+						return nil
+					}
+					mces = append(mces, model.ChaosEngineYaml{
+						APIVersion: ce.APIVersion,
+						Kind:       ce.Kind,
+						Metadata: model.ChaosEngineMetadata{
+							Namespace: ce.Metadata.Namespace,
+							Labels: model.ChaosEngineMetadataLabels{
+								WorkflowRunID: ce.Metadata.Labels.WorkflowRunID,
+								WorkflowName:  ce.Metadata.Labels.WorkflowName,
+							},
+							Annotations: model.ChaosEngineMetadataAnnotations{
+								ProbeRef: ce.Metadata.Annotations.ProbeRef,
+							},
+							GenerateName: ce.Metadata.GenerateName,
+						},
+						Spec: model.ChaosEngineSpec{
+							EngineState: ce.Spec.EngineState,
+							Appinfo: model.ChaosEngineSpecAppInfo{
+								Appns:    ce.Spec.Appinfo.Appns,
+								Applabel: ce.Spec.Appinfo.Applabel,
+								Appkind:  ce.Spec.Appinfo.Appkind,
+							},
+							ChaosServiceAccount: ce.Spec.ChaosServiceAccount,
+							Experiments:         experimentsConv(ce.Spec.Experiments),
+						},
+					})
+				}
+				return mces
+			}
+		}
+		return nil
+	}
+
 	revisionConv := func(c []mongocollection.Revision) []model.Revision {
 		var m []model.Revision
 		for _, ci := range c {
@@ -227,6 +305,7 @@ func (pc PostgresConnector) SaveChaosExperiments(ctx context.Context, ces []mong
 					},
 				},
 				ChaosExperimentYamls: chaosExperimentYamlsConv(ci),
+				ChaosEngineYamls:     chaosEngineYamlsConv(ci),
 			})
 		}
 		return m

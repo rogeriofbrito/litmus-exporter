@@ -1,30 +1,30 @@
 package yamlfield
 
 type ChaosExperiment struct {
-	APIVersion  string      `yaml:"apiVersion"`
-	Description Description `yaml:"description"`
-	Kind        string      `yaml:"kind"`
-	Metadata    Metadata    `yaml:"metadata"`
-	Spec        Spec        `yaml:"spec"`
+	APIVersion  string                  `yaml:"apiVersion"`
+	Description Description             `yaml:"description"`
+	Kind        string                  `yaml:"kind"`
+	Metadata    ChaosExperimentMetadata `yaml:"metadata"`
+	Spec        ChaosExperimentSpec     `yaml:"spec"`
 }
 
 type Description struct {
 	Message string `yaml:"message"`
 }
 
-type Metadata struct {
-	Name   string         `yaml:"name"`
-	Labels MetadataLabels `yaml:"labels"`
+type ChaosExperimentMetadata struct {
+	Name   string                        `yaml:"name"`
+	Labels ChaosExperimentMetadataLabels `yaml:"labels"`
 }
 
-type MetadataLabels struct {
+type ChaosExperimentMetadataLabels struct {
 	Name                     string `yaml:"name"`
 	AppKubernetesIoPartOf    string `yaml:"app.kubernetes.io/part-of"`
 	AppKubernetesIoComponent string `yaml:"app.kubernetes.io/component"`
 	AppKubernetesIoVersion   string `yaml:"app.kubernetes.io/version"`
 }
 
-type Spec struct {
+type ChaosExperimentSpec struct {
 	Definition Definition `yaml:"definition"`
 }
 
