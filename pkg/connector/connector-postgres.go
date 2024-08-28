@@ -8,8 +8,8 @@ import (
 	"time"
 
 	jsonfield "github.com/rogeriofbrito/litmus-exporter/pkg/json-field"
-	"github.com/rogeriofbrito/litmus-exporter/pkg/model"
 	model_chaos_engine_yaml "github.com/rogeriofbrito/litmus-exporter/pkg/model/chaos-engine-yaml"
+	model_chaos_experiment "github.com/rogeriofbrito/litmus-exporter/pkg/model/chaos-experiment"
 	model_chaos_experiment_yaml "github.com/rogeriofbrito/litmus-exporter/pkg/model/chaos-experiment-yaml"
 	mongocollection "github.com/rogeriofbrito/litmus-exporter/pkg/mongo-collection"
 	"github.com/rogeriofbrito/litmus-exporter/pkg/util"
@@ -32,23 +32,24 @@ func (pc PostgresConnector) Init(ctx context.Context) error {
 	}
 
 	err = db.AutoMigrate(
-		&model.ChaosExperiment{},
-		&model.User{},
-		&model.ChaosExperimentRevision{},
-		&model.ChaosExperimentManifest{},
-		&model.ChaosExperimentMetadata{},
-		&model.ChaosExperimentLabels{},
-		&model.ChaosExperimentSpec{},
-		&model.ChaosExperimentTemplate{},
-		&model.ChaosExperimentSteps{},
-		&model.ChaosExperimentContainer{},
-		&model.ChaosExperimentArguments{},
-		&model.ChaosExperimentParameter{},
-		&model.ChaosExperimentPodGC{},
-		&model.ChaosExperimentSecurityContext{},
-		&model.ChaosExperimentStatus{},
-		&model.ChaosExperimentRecentExperimentRunDetail{},
-		&model.ChaosExperimentProbe{},
+		//ChaosExperiment
+		&model_chaos_experiment.ChaosExperiment{},
+		&model_chaos_experiment.User{},
+		&model_chaos_experiment.ChaosExperimentRevision{},
+		&model_chaos_experiment.ChaosExperimentManifest{},
+		&model_chaos_experiment.ChaosExperimentMetadata{},
+		&model_chaos_experiment.ChaosExperimentLabels{},
+		&model_chaos_experiment.ChaosExperimentSpec{},
+		&model_chaos_experiment.ChaosExperimentTemplate{},
+		&model_chaos_experiment.ChaosExperimentSteps{},
+		&model_chaos_experiment.ChaosExperimentContainer{},
+		&model_chaos_experiment.ChaosExperimentArguments{},
+		&model_chaos_experiment.ChaosExperimentParameter{},
+		&model_chaos_experiment.ChaosExperimentPodGC{},
+		&model_chaos_experiment.ChaosExperimentSecurityContext{},
+		&model_chaos_experiment.ChaosExperimentStatus{},
+		&model_chaos_experiment.ChaosExperimentRecentExperimentRunDetail{},
+		&model_chaos_experiment.ChaosExperimentProbe{},
 		//ChaosExperimentYaml
 		&model_chaos_experiment_yaml.ChaosExperimentYaml{},
 		&model_chaos_experiment_yaml.ChaosExperimentYamlDescription{},
@@ -84,15 +85,15 @@ func (pc PostgresConnector) SaveChaosExperiments(ctx context.Context, ces []mong
 		return err
 	}
 
-	cems := util.SliceMap(ces, func(ce mongocollection.ChaosExperiment) model.ChaosExperiment {
-		return model.ChaosExperiment{
+	cems := util.SliceMap(ces, func(ce mongocollection.ChaosExperiment) model_chaos_experiment.ChaosExperiment {
+		return model_chaos_experiment.ChaosExperiment{
 			MongoID:     ce.ID.String(),
 			Name:        ce.Name,
 			Description: ce.Description,
 			Tags:        strings.Join(ce.Tags, ","),
 			UpdatedAt:   pc.getTime(ce.UpdatedAt),
 			CreatedAt:   pc.getTime(ce.CreatedAt),
-			/*UpdatedBy: model.User{
+			/*UpdatedBy: model_chaos_experiment.User{
 				UserID:   ce.UpdatedBy.UserID,
 				UserName: ce.UpdatedBy.UserName,
 				Email:    ce.UpdatedBy.Email,
@@ -103,27 +104,27 @@ func (pc PostgresConnector) SaveChaosExperiments(ctx context.Context, ces []mong
 			CronSyntax:     ce.CronSyntax,
 			InfraID:        ce.InfraID,
 			ExperimentType: ce.ExperimentType,
-			Revision: util.SliceMap(ce.Revision, func(rev mongocollection.Revision) model.ChaosExperimentRevision {
-				return model.ChaosExperimentRevision{
+			Revision: util.SliceMap(ce.Revision, func(rev mongocollection.Revision) model_chaos_experiment.ChaosExperimentRevision {
+				return model_chaos_experiment.ChaosExperimentRevision{
 					RevisionID: rev.RevisionId,
-					ExperimentManifest: model.ChaosExperimentManifest{
+					ExperimentManifest: model_chaos_experiment.ChaosExperimentManifest{
 						Kind:       rev.ExperimentManifest.Kind,
 						APIVersion: rev.ExperimentManifest.APIVersion,
-						Metadata: model.ChaosExperimentMetadata{
+						Metadata: model_chaos_experiment.ChaosExperimentMetadata{
 							Name:              rev.ExperimentManifest.Metadata.Name,
 							CreationTimestamp: pc.getTime(rev.ExperimentManifest.Metadata.CreationTimestamp),
-							Labels: model.ChaosExperimentLabels{
+							Labels: model_chaos_experiment.ChaosExperimentLabels{
 								InfraID:              rev.ExperimentManifest.Metadata.Labels.InfraID,
 								RevisionID:           rev.ExperimentManifest.Metadata.Labels.RevisionID,
 								WorkflowID:           rev.ExperimentManifest.Metadata.Labels.WorkflowID,
 								ControllerInstanceID: rev.ExperimentManifest.Metadata.Labels.WorkflowsArgoprojIoControllerInstanceid,
 							},
 						},
-						Spec: model.ChaosExperimentSpec{
-							Templates: util.SliceMap(rev.ExperimentManifest.Spec.Templates, func(temp jsonfield.Template) model.ChaosExperimentTemplate {
-								return model.ChaosExperimentTemplate{
+						Spec: model_chaos_experiment.ChaosExperimentSpec{
+							Templates: util.SliceMap(rev.ExperimentManifest.Spec.Templates, func(temp jsonfield.Template) model_chaos_experiment.ChaosExperimentTemplate {
+								return model_chaos_experiment.ChaosExperimentTemplate{
 									Name: temp.Name,
-									Steps: model.ChaosExperimentSteps{
+									Steps: model_chaos_experiment.ChaosExperimentSteps{
 										Name: func(steps jsonfield.Steps) string {
 											if len(steps) == 0 {
 												return ""
@@ -137,7 +138,7 @@ func (pc PostgresConnector) SaveChaosExperiments(ctx context.Context, ces []mong
 											return steps[0][0].Template
 										}(temp.Steps),
 									},
-									Container: model.ChaosExperimentContainer{
+									Container: model_chaos_experiment.ChaosExperimentContainer{
 										Name:    temp.Container.Name,
 										Image:   temp.Container.Image,
 										Command: strings.Join(temp.Container.Command, ","),
@@ -146,24 +147,24 @@ func (pc PostgresConnector) SaveChaosExperiments(ctx context.Context, ces []mong
 								}
 							}),
 							Entrypoint: rev.ExperimentManifest.Spec.Entrypoint,
-							Arguments: model.ChaosExperimentArguments{
-								Parameters: util.SliceMap(rev.ExperimentManifest.Spec.Arguments.Parameters, func(param jsonfield.Parameter) model.ChaosExperimentParameter {
-									return model.ChaosExperimentParameter{
+							Arguments: model_chaos_experiment.ChaosExperimentArguments{
+								Parameters: util.SliceMap(rev.ExperimentManifest.Spec.Arguments.Parameters, func(param jsonfield.Parameter) model_chaos_experiment.ChaosExperimentParameter {
+									return model_chaos_experiment.ChaosExperimentParameter{
 										Name:  param.Name,
 										Value: param.Value,
 									}
 								}),
 							},
 							ServiceAccountName: rev.ExperimentManifest.Spec.ServiceAccountName,
-							PodGC: model.ChaosExperimentPodGC{
+							PodGC: model_chaos_experiment.ChaosExperimentPodGC{
 								Strategy: rev.ExperimentManifest.Spec.PodGC.Strategy,
 							},
-							SecurityContext: model.ChaosExperimentSecurityContext{
+							SecurityContext: model_chaos_experiment.ChaosExperimentSecurityContext{
 								RunAsUser:    rev.ExperimentManifest.Spec.SecurityContext.RunAsUser,
 								RunAsNonRoot: rev.ExperimentManifest.Spec.SecurityContext.RunAsNonRoot,
 							},
 						},
-						Status: model.ChaosExperimentStatus{
+						Status: model_chaos_experiment.ChaosExperimentStatus{
 							StartedAt:  pc.getTime(rev.ExperimentManifest.Status.StartedAt),
 							FinishedAt: pc.getTime(rev.ExperimentManifest.Status.FinishedAt),
 						},
@@ -173,16 +174,16 @@ func (pc PostgresConnector) SaveChaosExperiments(ctx context.Context, ces []mong
 				}
 			}),
 			IsCustomExperiment: ce.IsCustomExperiment,
-			RecentExperimentRunDetails: util.SliceMap(ce.RecentExperimentRunDetails, func(detail mongocollection.RecentExperimentRunDetail) model.ChaosExperimentRecentExperimentRunDetail {
-				return model.ChaosExperimentRecentExperimentRunDetail{
+			RecentExperimentRunDetails: util.SliceMap(ce.RecentExperimentRunDetails, func(detail mongocollection.RecentExperimentRunDetail) model_chaos_experiment.ChaosExperimentRecentExperimentRunDetail {
+				return model_chaos_experiment.ChaosExperimentRecentExperimentRunDetail{
 					UpdatedAt: pc.getTime(detail.UpdatedAt),
 					CreatedAt: pc.getTime(detail.CreatedAt),
-					/*CreatedBy: model.User{
+					/*CreatedBy: model_chaos_experiment.User{
 						UserID:   ci.CreatedBy.UserID,
 						UserName: ci.CreatedBy.UserName,
 						Email:    ci.CreatedBy.Email,
 					},
-					UpdatedBy: model.User{
+					UpdatedBy: model_chaos_experiment.User{
 						UserID:   ci.UpdatedBy.UserID,
 						UserName: ci.UpdatedBy.UserName,
 						Email:    ci.UpdatedBy.Email,
@@ -194,8 +195,8 @@ func (pc PostgresConnector) SaveChaosExperiments(ctx context.Context, ces []mong
 					NotifyID:        detail.NotifyID,
 					Completed:       detail.Completed,
 					RunSequence:     detail.RunSequence,
-					Probes: util.SliceMap(detail.Probes, func(probe mongocollection.Probe) model.ChaosExperimentProbe {
-						return model.ChaosExperimentProbe{
+					Probes: util.SliceMap(detail.Probes, func(probe mongocollection.Probe) model_chaos_experiment.ChaosExperimentProbe {
+						return model_chaos_experiment.ChaosExperimentProbe{
 							FaultName:  probe.FaultName,
 							ProbeNames: strings.Join(probe.ProbeNames, ","),
 						}
