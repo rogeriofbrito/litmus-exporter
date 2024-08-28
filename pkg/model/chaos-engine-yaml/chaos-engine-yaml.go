@@ -4,7 +4,7 @@ import "github.com/google/uuid"
 
 type ChaosEngineYaml struct {
 	ID                   uuid.UUID               `gorm:"column:id;type:uuid;default:uuid_generate_v4();primaryKey"`
-	ExperimentRevisionID uuid.UUID               `gorm:"column:experiment_revision_id"`
+	ExperimentRevisionID uuid.UUID               `gorm:"column:revision_id"`
 	APIVersion           string                  `gorm:"column:api_version"`
 	Kind                 string                  `gorm:"column:kind"`
 	Metadata             ChaosEngineYamlMetadata `gorm:"constraint:OnUpdate:CASCADE,OnDelete:CASCADE;foreignKey:chaos_engine_yaml_id"`

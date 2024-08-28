@@ -34,21 +34,21 @@ func (pc PostgresConnector) Init(ctx context.Context) error {
 	err = db.AutoMigrate(
 		&model.ChaosExperiment{},
 		&model.User{},
-		&model.Revision{},
-		&model.ExperimentManifest{},
-		&model.ManifestMetadata{},
-		&model.Labels{},
-		&model.ManifestSpec{},
-		&model.Template{},
-		&model.Steps{},
-		&model.Container{},
-		&model.Arguments{},
-		&model.Parameter{},
-		&model.PodGC{},
-		&model.SecurityContext{},
-		&model.Status{},
-		&model.RecentExperimentRunDetail{},
-		&model.Probe{},
+		&model.ChaosExperimentRevision{},
+		&model.ChaosExperimentManifest{},
+		&model.ChaosExperimentMetadata{},
+		&model.ChaosExperimentLabels{},
+		&model.ChaosExperimentSpec{},
+		&model.ChaosExperimentTemplate{},
+		&model.ChaosExperimentSteps{},
+		&model.ChaosExperimentContainer{},
+		&model.ChaosExperimentArguments{},
+		&model.ChaosExperimentParameter{},
+		&model.ChaosExperimentPodGC{},
+		&model.ChaosExperimentSecurityContext{},
+		&model.ChaosExperimentStatus{},
+		&model.ChaosExperimentRecentExperimentRunDetail{},
+		&model.ChaosExperimentProbe{},
 		//ChaosExperimentYaml
 		&model_chaos_experiment_yaml.ChaosExperimentYaml{},
 		&model_chaos_experiment_yaml.ChaosExperimentYamlDescription{},
@@ -103,27 +103,27 @@ func (pc PostgresConnector) SaveChaosExperiments(ctx context.Context, ces []mong
 			CronSyntax:     ce.CronSyntax,
 			InfraID:        ce.InfraID,
 			ExperimentType: ce.ExperimentType,
-			Revision: util.SliceMap(ce.Revision, func(rev mongocollection.Revision) model.Revision {
-				return model.Revision{
+			Revision: util.SliceMap(ce.Revision, func(rev mongocollection.Revision) model.ChaosExperimentRevision {
+				return model.ChaosExperimentRevision{
 					RevisionID: rev.RevisionId,
-					ExperimentManifest: model.ExperimentManifest{
+					ExperimentManifest: model.ChaosExperimentManifest{
 						Kind:       rev.ExperimentManifest.Kind,
 						APIVersion: rev.ExperimentManifest.APIVersion,
-						Metadata: model.ManifestMetadata{
+						Metadata: model.ChaosExperimentMetadata{
 							Name:              rev.ExperimentManifest.Metadata.Name,
 							CreationTimestamp: pc.getTime(rev.ExperimentManifest.Metadata.CreationTimestamp),
-							Labels: model.Labels{
+							Labels: model.ChaosExperimentLabels{
 								InfraID:              rev.ExperimentManifest.Metadata.Labels.InfraID,
 								RevisionID:           rev.ExperimentManifest.Metadata.Labels.RevisionID,
 								WorkflowID:           rev.ExperimentManifest.Metadata.Labels.WorkflowID,
 								ControllerInstanceID: rev.ExperimentManifest.Metadata.Labels.WorkflowsArgoprojIoControllerInstanceid,
 							},
 						},
-						Spec: model.ManifestSpec{
-							Templates: util.SliceMap(rev.ExperimentManifest.Spec.Templates, func(temp jsonfield.Template) model.Template {
-								return model.Template{
+						Spec: model.ChaosExperimentSpec{
+							Templates: util.SliceMap(rev.ExperimentManifest.Spec.Templates, func(temp jsonfield.Template) model.ChaosExperimentTemplate {
+								return model.ChaosExperimentTemplate{
 									Name: temp.Name,
-									Steps: model.Steps{
+									Steps: model.ChaosExperimentSteps{
 										Name: func(steps jsonfield.Steps) string {
 											if len(steps) == 0 {
 												return ""
@@ -137,7 +137,7 @@ func (pc PostgresConnector) SaveChaosExperiments(ctx context.Context, ces []mong
 											return steps[0][0].Template
 										}(temp.Steps),
 									},
-									Container: model.Container{
+									Container: model.ChaosExperimentContainer{
 										Name:    temp.Container.Name,
 										Image:   temp.Container.Image,
 										Command: strings.Join(temp.Container.Command, ","),
@@ -146,24 +146,24 @@ func (pc PostgresConnector) SaveChaosExperiments(ctx context.Context, ces []mong
 								}
 							}),
 							Entrypoint: rev.ExperimentManifest.Spec.Entrypoint,
-							Arguments: model.Arguments{
-								Parameters: util.SliceMap(rev.ExperimentManifest.Spec.Arguments.Parameters, func(param jsonfield.Parameter) model.Parameter {
-									return model.Parameter{
+							Arguments: model.ChaosExperimentArguments{
+								Parameters: util.SliceMap(rev.ExperimentManifest.Spec.Arguments.Parameters, func(param jsonfield.Parameter) model.ChaosExperimentParameter {
+									return model.ChaosExperimentParameter{
 										Name:  param.Name,
 										Value: param.Value,
 									}
 								}),
 							},
 							ServiceAccountName: rev.ExperimentManifest.Spec.ServiceAccountName,
-							PodGC: model.PodGC{
+							PodGC: model.ChaosExperimentPodGC{
 								Strategy: rev.ExperimentManifest.Spec.PodGC.Strategy,
 							},
-							SecurityContext: model.SecurityContext{
+							SecurityContext: model.ChaosExperimentSecurityContext{
 								RunAsUser:    rev.ExperimentManifest.Spec.SecurityContext.RunAsUser,
 								RunAsNonRoot: rev.ExperimentManifest.Spec.SecurityContext.RunAsNonRoot,
 							},
 						},
-						Status: model.Status{
+						Status: model.ChaosExperimentStatus{
 							StartedAt:  pc.getTime(rev.ExperimentManifest.Status.StartedAt),
 							FinishedAt: pc.getTime(rev.ExperimentManifest.Status.FinishedAt),
 						},
@@ -173,8 +173,8 @@ func (pc PostgresConnector) SaveChaosExperiments(ctx context.Context, ces []mong
 				}
 			}),
 			IsCustomExperiment: ce.IsCustomExperiment,
-			RecentExperimentRunDetails: util.SliceMap(ce.RecentExperimentRunDetails, func(detail mongocollection.RecentExperimentRunDetail) model.RecentExperimentRunDetail {
-				return model.RecentExperimentRunDetail{
+			RecentExperimentRunDetails: util.SliceMap(ce.RecentExperimentRunDetails, func(detail mongocollection.RecentExperimentRunDetail) model.ChaosExperimentRecentExperimentRunDetail {
+				return model.ChaosExperimentRecentExperimentRunDetail{
 					UpdatedAt: pc.getTime(detail.UpdatedAt),
 					CreatedAt: pc.getTime(detail.CreatedAt),
 					/*CreatedBy: model.User{
@@ -194,8 +194,8 @@ func (pc PostgresConnector) SaveChaosExperiments(ctx context.Context, ces []mong
 					NotifyID:        detail.NotifyID,
 					Completed:       detail.Completed,
 					RunSequence:     detail.RunSequence,
-					Probes: util.SliceMap(detail.Probes, func(probe mongocollection.Probe) model.Probe {
-						return model.Probe{
+					Probes: util.SliceMap(detail.Probes, func(probe mongocollection.Probe) model.ChaosExperimentProbe {
+						return model.ChaosExperimentProbe{
 							FaultName:  probe.FaultName,
 							ProbeNames: strings.Join(probe.ProbeNames, ","),
 						}
