@@ -12,6 +12,7 @@ import (
 	model_chaos_engine_yaml "github.com/rogeriofbrito/litmus-exporter/pkg/model/chaos-engine-yaml"
 	model_chaos_experiment_yaml "github.com/rogeriofbrito/litmus-exporter/pkg/model/chaos-experiment-yaml"
 	mongocollection "github.com/rogeriofbrito/litmus-exporter/pkg/mongo-collection"
+	"github.com/rogeriofbrito/litmus-exporter/pkg/util"
 	yamlfield "github.com/rogeriofbrito/litmus-exporter/pkg/yaml-field"
 	"gopkg.in/yaml.v2"
 	"gorm.io/driver/postgres"
@@ -83,264 +84,100 @@ func (pc PostgresConnector) SaveChaosExperiments(ctx context.Context, ces []mong
 		return err
 	}
 
-	timeConv := func(t int64) *time.Time {
-		if t == 0 {
-			return nil
-		}
-		time := time.Unix(t/1000, t%1000)
-		return &time
-	}
-
-	parametersConv := func(c []jsonfield.Parameter) []model.Parameter {
-		var m []model.Parameter
-		for _, ci := range c {
-			m = append(m, model.Parameter{
-				Name:  ci.Name,
-				Value: ci.Value,
-			})
-		}
-		return m
-	}
-
-	templatesConv := func(c []jsonfield.Template) []model.Template {
-		getStepName := func(steps jsonfield.Steps) string {
-			if len(steps) == 0 {
-				return ""
-			}
-			return steps[0][0].Name
-		}
-
-		getStepTemplate := func(steps jsonfield.Steps) string {
-			if len(steps) == 0 {
-				return ""
-			}
-			return steps[0][0].Template
-		}
-
-		var m []model.Template
-		for _, ci := range c {
-			m = append(m, model.Template{
-				Name: ci.Name,
-				Steps: model.Steps{
-					Name:     getStepName(ci.Steps),
-					Template: getStepTemplate(ci.Steps),
-				},
-				Container: model.Container{
-					Name:    ci.Container.Name,
-					Image:   ci.Container.Image,
-					Command: strings.Join(ci.Container.Command, ","),
-					Args:    strings.Join(ci.Container.Args, ","),
-				},
-			})
-		}
-		return m
-	}
-
-	chaosExperimentYamlsConv := func(ce mongocollection.Revision) []model_chaos_experiment_yaml.ChaosExperimentYaml {
-		permissionsConv := func(permissions []yamlfield.Permission) []model_chaos_experiment_yaml.ChaosExperimentYamlPermission {
-			var m []model_chaos_experiment_yaml.ChaosExperimentYamlPermission
-			for _, p := range permissions {
-				m = append(m, model_chaos_experiment_yaml.ChaosExperimentYamlPermission{
-					APIGroups: strings.Join(p.APIGroups, ","),
-					Resources: strings.Join(p.Resources, ","),
-					Verbs:     strings.Join(p.Verbs, ","),
-				})
-			}
-			return m
-		}
-
-		envConv := func(envs []yamlfield.ChaosExperimentEnv) []model_chaos_experiment_yaml.ChaosExperimentYamlEnv {
-			var m []model_chaos_experiment_yaml.ChaosExperimentYamlEnv
-			for _, e := range envs {
-				m = append(m, model_chaos_experiment_yaml.ChaosExperimentYamlEnv{
-					Name:  e.Name,
-					Value: e.Value,
-				})
-			}
-			return m
-		}
-
-		var mces []model_chaos_experiment_yaml.ChaosExperimentYaml
-		for _, t := range ce.ExperimentManifest.Spec.Templates {
-			if t.Name == "install-chaos-faults" {
-				for _, a := range t.Inputs.Artifacts {
-					var ce yamlfield.ChaosExperiment
-					err := yaml.Unmarshal([]byte(a.Raw.Data), &ce)
-					if err != nil {
-						panic(err)
-					}
-					mces = append(mces, model_chaos_experiment_yaml.ChaosExperimentYaml{
-						APIVersion: ce.APIVersion,
-						Description: model_chaos_experiment_yaml.ChaosExperimentYamlDescription{
-							Message: ce.Description.Message,
-						},
-						Kind: ce.Kind,
-						Metadata: model_chaos_experiment_yaml.ChaosExperimentYamlMetadata{
-							Name: ce.Metadata.Name,
-							Labels: model_chaos_experiment_yaml.ChaosExperimentYamlLabels{
-								Name:                     ce.Metadata.Labels.Name,
-								AppKubernetesIoPartOf:    ce.Metadata.Labels.AppKubernetesIoPartOf,
-								AppKubernetesIoComponent: ce.Metadata.Labels.AppKubernetesIoComponent,
-								AppKubernetesIoVersion:   ce.Metadata.Labels.AppKubernetesIoVersion,
+	cems := util.SliceMap(ces, func(ce mongocollection.ChaosExperiment) model.ChaosExperiment {
+		return model.ChaosExperiment{
+			MongoID:     ce.ID.String(),
+			Name:        ce.Name,
+			Description: ce.Description,
+			Tags:        strings.Join(ce.Tags, ","),
+			UpdatedAt:   pc.getTime(ce.UpdatedAt),
+			CreatedAt:   pc.getTime(ce.CreatedAt),
+			/*UpdatedBy: model.User{
+				UserID:   ce.UpdatedBy.UserID,
+				UserName: ce.UpdatedBy.UserName,
+				Email:    ce.UpdatedBy.Email,
+			},*/
+			IsRemoved:      ce.IsRemoved,
+			ProjectID:      ce.ProjectID,
+			ExperimentID:   ce.ExperimentID,
+			CronSyntax:     ce.CronSyntax,
+			InfraID:        ce.InfraID,
+			ExperimentType: ce.ExperimentType,
+			Revision: util.SliceMap(ce.Revision, func(rev mongocollection.Revision) model.Revision {
+				return model.Revision{
+					RevisionID: rev.RevisionId,
+					ExperimentManifest: model.ExperimentManifest{
+						Kind:       rev.ExperimentManifest.Kind,
+						APIVersion: rev.ExperimentManifest.APIVersion,
+						Metadata: model.ManifestMetadata{
+							Name:              rev.ExperimentManifest.Metadata.Name,
+							CreationTimestamp: pc.getTime(rev.ExperimentManifest.Metadata.CreationTimestamp),
+							Labels: model.Labels{
+								InfraID:              rev.ExperimentManifest.Metadata.Labels.InfraID,
+								RevisionID:           rev.ExperimentManifest.Metadata.Labels.RevisionID,
+								WorkflowID:           rev.ExperimentManifest.Metadata.Labels.WorkflowID,
+								ControllerInstanceID: rev.ExperimentManifest.Metadata.Labels.WorkflowsArgoprojIoControllerInstanceid,
 							},
 						},
-						Spec: model_chaos_experiment_yaml.ChaosExperimentYamlSpec{
-							Definition: model_chaos_experiment_yaml.ChaosExperimentYamlDefinition{
-								Scope:           ce.Spec.Definition.Scope,
-								Permissions:     permissionsConv(ce.Spec.Definition.Permissions),
-								Image:           ce.Spec.Definition.Image,
-								ImagePullPolicy: ce.Spec.Definition.ImagePullPolicy,
-								Args:            strings.Join(ce.Spec.Definition.Args, ","),
-								Command:         strings.Join(ce.Spec.Definition.Command, ","),
-								Env:             envConv(ce.Spec.Definition.Env),
-								Labels: model_chaos_experiment_yaml.ChaosExperimentYamlDefinitionLabels{
-									Name:                           ce.Spec.Definition.Labels.Name,
-									AppKubernetesIoPartOf:          ce.Spec.Definition.Labels.AppKubernetesIoPartOf,
-									AppKubernetesIoComponent:       ce.Spec.Definition.Labels.AppKubernetesIoComponent,
-									AppKubernetesIoRuntimeAPIUsage: ce.Spec.Definition.Labels.AppKubernetesIoRuntimeAPIUsage,
-									AppKubernetesIoVersion:         ce.Spec.Definition.Labels.AppKubernetesIoVersion,
-								},
+						Spec: model.ManifestSpec{
+							Templates: util.SliceMap(rev.ExperimentManifest.Spec.Templates, func(temp jsonfield.Template) model.Template {
+								return model.Template{
+									Name: temp.Name,
+									Steps: model.Steps{
+										Name: func(steps jsonfield.Steps) string {
+											if len(steps) == 0 {
+												return ""
+											}
+											return steps[0][0].Name
+										}(temp.Steps),
+										Template: func(steps jsonfield.Steps) string {
+											if len(steps) == 0 {
+												return ""
+											}
+											return steps[0][0].Template
+										}(temp.Steps),
+									},
+									Container: model.Container{
+										Name:    temp.Container.Name,
+										Image:   temp.Container.Image,
+										Command: strings.Join(temp.Container.Command, ","),
+										Args:    strings.Join(temp.Container.Args, ","),
+									},
+								}
+							}),
+							Entrypoint: rev.ExperimentManifest.Spec.Entrypoint,
+							Arguments: model.Arguments{
+								Parameters: util.SliceMap(rev.ExperimentManifest.Spec.Arguments.Parameters, func(param jsonfield.Parameter) model.Parameter {
+									return model.Parameter{
+										Name:  param.Name,
+										Value: param.Value,
+									}
+								}),
+							},
+							ServiceAccountName: rev.ExperimentManifest.Spec.ServiceAccountName,
+							PodGC: model.PodGC{
+								Strategy: rev.ExperimentManifest.Spec.PodGC.Strategy,
+							},
+							SecurityContext: model.SecurityContext{
+								RunAsUser:    rev.ExperimentManifest.Spec.SecurityContext.RunAsUser,
+								RunAsNonRoot: rev.ExperimentManifest.Spec.SecurityContext.RunAsNonRoot,
 							},
 						},
-					})
+						Status: model.Status{
+							StartedAt:  pc.getTime(rev.ExperimentManifest.Status.StartedAt),
+							FinishedAt: pc.getTime(rev.ExperimentManifest.Status.FinishedAt),
+						},
+					},
+					ChaosExperimentYamls: pc.getChaosExperimentYamls(rev),
+					ChaosEngineYamls:     pc.getChaosEngineYamls(rev),
 				}
-			}
-		}
-		return mces
-	}
-
-	chaosEngineYamlsConv := func(ce mongocollection.Revision) []model_chaos_engine_yaml.ChaosEngineYaml {
-		envConv := func(envs []yamlfield.ChaosEngineEnv) []model_chaos_engine_yaml.ChaosEngineYamlEnv {
-			var m []model_chaos_engine_yaml.ChaosEngineYamlEnv
-			for _, env := range envs {
-				m = append(m, model_chaos_engine_yaml.ChaosEngineYamlEnv{
-					Name:  env.Name,
-					Value: env.Value,
-				})
-			}
-			return m
-		}
-
-		experimentsConv := func(exps []yamlfield.ChaosEngineExperiment) []model_chaos_engine_yaml.ChaosEngineYamlExperiment {
-			var m []model_chaos_engine_yaml.ChaosEngineYamlExperiment
-			for _, exp := range exps {
-				m = append(m, model_chaos_engine_yaml.ChaosEngineYamlExperiment{
-					Name: exp.Name,
-					Spec: model_chaos_engine_yaml.ChaosEngineYamlExperimentSpec{
-						Components: model_chaos_engine_yaml.ChaosEngineYamlCompoments{
-							Env: envConv(exp.Spec.Components.Env),
-						},
-					},
-				})
-			}
-			return m
-		}
-
-		var mces []model_chaos_engine_yaml.ChaosEngineYaml
-		for _, t := range ce.ExperimentManifest.Spec.Templates {
-			if strings.Contains(t.Container.Image, "litmus-checker") {
-				for _, a := range t.Inputs.Artifacts {
-					var ce yamlfield.ChaosEngine
-					err := yaml.Unmarshal([]byte(a.Raw.Data), &ce)
-					if err != nil {
-						panic(err)
-					}
-					mces = append(mces, model_chaos_engine_yaml.ChaosEngineYaml{
-						APIVersion: ce.APIVersion,
-						Kind:       ce.Kind,
-						Metadata: model_chaos_engine_yaml.ChaosEngineYamlMetadata{
-							Namespace: ce.Metadata.Namespace,
-							Labels: model_chaos_engine_yaml.ChaosEngineYamlLabels{
-								WorkflowRunID: ce.Metadata.Labels.WorkflowRunID,
-								WorkflowName:  ce.Metadata.Labels.WorkflowName,
-							},
-							Annotations: model_chaos_engine_yaml.ChaosEngineYamlAnnotations{
-								ProbeRef: ce.Metadata.Annotations.ProbeRef,
-							},
-							GenerateName: ce.Metadata.GenerateName,
-						},
-						Spec: model_chaos_engine_yaml.ChaosEngineYamlSpec{
-							EngineState: ce.Spec.EngineState,
-							Appinfo: model_chaos_engine_yaml.ChaosEngineYamlAppInfo{
-								Appns:    ce.Spec.Appinfo.Appns,
-								Applabel: ce.Spec.Appinfo.Applabel,
-								Appkind:  ce.Spec.Appinfo.Appkind,
-							},
-							ChaosServiceAccount: ce.Spec.ChaosServiceAccount,
-							Experiments:         experimentsConv(ce.Spec.Experiments),
-						},
-					})
-				}
-
-			}
-		}
-		return mces
-	}
-
-	revisionConv := func(c []mongocollection.Revision) []model.Revision {
-		var m []model.Revision
-		for _, ci := range c {
-			m = append(m, model.Revision{
-				RevisionID: ci.RevisionId,
-				ExperimentManifest: model.ExperimentManifest{
-					Kind:       ci.ExperimentManifest.Kind,
-					APIVersion: ci.ExperimentManifest.APIVersion,
-					Metadata: model.ManifestMetadata{
-						Name:              ci.ExperimentManifest.Metadata.Name,
-						CreationTimestamp: timeConv(ci.ExperimentManifest.Metadata.CreationTimestamp),
-						Labels: model.Labels{
-							InfraID:              ci.ExperimentManifest.Metadata.Labels.InfraID,
-							RevisionID:           ci.ExperimentManifest.Metadata.Labels.RevisionID,
-							WorkflowID:           ci.ExperimentManifest.Metadata.Labels.WorkflowID,
-							ControllerInstanceID: ci.ExperimentManifest.Metadata.Labels.WorkflowsArgoprojIoControllerInstanceid,
-						},
-					},
-					Spec: model.ManifestSpec{
-						Templates:  templatesConv(ci.ExperimentManifest.Spec.Templates),
-						Entrypoint: ci.ExperimentManifest.Spec.Entrypoint,
-						Arguments: model.Arguments{
-							Parameters: parametersConv(ci.ExperimentManifest.Spec.Arguments.Parameters),
-						},
-						ServiceAccountName: ci.ExperimentManifest.Spec.ServiceAccountName,
-						PodGC: model.PodGC{
-							Strategy: ci.ExperimentManifest.Spec.PodGC.Strategy,
-						},
-						SecurityContext: model.SecurityContext{
-							RunAsUser:    ci.ExperimentManifest.Spec.SecurityContext.RunAsUser,
-							RunAsNonRoot: ci.ExperimentManifest.Spec.SecurityContext.RunAsNonRoot,
-						},
-					},
-					Status: model.Status{
-						StartedAt:  timeConv(ci.ExperimentManifest.Status.StartedAt),
-						FinishedAt: timeConv(ci.ExperimentManifest.Status.FinishedAt),
-					},
-				},
-				ChaosExperimentYamls: chaosExperimentYamlsConv(ci),
-				ChaosEngineYamls:     chaosEngineYamlsConv(ci),
-			})
-		}
-		return m
-	}
-
-	probesConv := func(c []mongocollection.Probe) []model.Probe {
-		var m []model.Probe
-		for _, ci := range c {
-			m = append(m, model.Probe{
-				FaultName:  ci.FaultName,
-				ProbeNames: strings.Join(ci.ProbeNames, ","),
-			})
-		}
-		return m
-	}
-
-	recentExperimentRunDetailsConv := func(c []mongocollection.RecentExperimentRunDetail) []model.RecentExperimentRunDetail {
-		var m []model.RecentExperimentRunDetail
-		for _, ci := range c {
-			m = append(m, model.RecentExperimentRunDetail{
-				UpdatedAt: timeConv(ci.UpdatedAt),
-				CreatedAt: timeConv(ci.CreatedAt),
-				/*
-					CreatedBy: model.User{
+			}),
+			IsCustomExperiment: ce.IsCustomExperiment,
+			RecentExperimentRunDetails: util.SliceMap(ce.RecentExperimentRunDetails, func(detail mongocollection.RecentExperimentRunDetail) model.RecentExperimentRunDetail {
+				return model.RecentExperimentRunDetail{
+					UpdatedAt: pc.getTime(detail.UpdatedAt),
+					CreatedAt: pc.getTime(detail.CreatedAt),
+					/*CreatedBy: model.User{
 						UserID:   ci.CreatedBy.UserID,
 						UserName: ci.CreatedBy.UserName,
 						Email:    ci.CreatedBy.Email,
@@ -349,48 +186,28 @@ func (pc PostgresConnector) SaveChaosExperiments(ctx context.Context, ces []mong
 						UserID:   ci.UpdatedBy.UserID,
 						UserName: ci.UpdatedBy.UserName,
 						Email:    ci.UpdatedBy.Email,
-					},
-				*/
-				IsRemoved:       ci.IsRemoved,
-				ProjectID:       ci.ProjectID,
-				ExperimentRunID: ci.ExperimentRunID,
-				Phase:           ci.Phase,
-				NotifyID:        ci.NotifyID,
-				Completed:       ci.Completed,
-				RunSequence:     ci.RunSequence,
-				Probes:          probesConv(ci.Probes),
-				ResiliencyScore: ci.ResiliencyScore,
-			})
+					},*/
+					IsRemoved:       detail.IsRemoved,
+					ProjectID:       detail.ProjectID,
+					ExperimentRunID: detail.ExperimentRunID,
+					Phase:           detail.Phase,
+					NotifyID:        detail.NotifyID,
+					Completed:       detail.Completed,
+					RunSequence:     detail.RunSequence,
+					Probes: util.SliceMap(detail.Probes, func(probe mongocollection.Probe) model.Probe {
+						return model.Probe{
+							FaultName:  probe.FaultName,
+							ProbeNames: strings.Join(probe.ProbeNames, ","),
+						}
+					}),
+					ResiliencyScore: detail.ResiliencyScore,
+				}
+			}),
+			TotalExperimentRuns: ce.TotalExperimentRuns,
 		}
-		return m
-	}
+	})
 
-	for _, ce := range ces {
-		cem := model.ChaosExperiment{
-			MongoID:     ce.ID.String(),
-			Name:        ce.Name,
-			Description: ce.Description,
-			Tags:        strings.Join(ce.Tags, ","),
-			UpdatedAt:   timeConv(ce.UpdatedAt),
-			CreatedAt:   timeConv(ce.CreatedAt),
-			/*
-				UpdatedBy: model.User{
-					UserID:   ce.UpdatedBy.UserID,
-					UserName: ce.UpdatedBy.UserName,
-					Email:    ce.UpdatedBy.Email,
-				},
-			*/
-			IsRemoved:                  ce.IsRemoved,
-			ProjectID:                  ce.ProjectID,
-			ExperimentID:               ce.ExperimentID,
-			CronSyntax:                 ce.CronSyntax,
-			InfraID:                    ce.InfraID,
-			ExperimentType:             ce.ExperimentType,
-			Revision:                   revisionConv(ce.Revision),
-			IsCustomExperiment:         ce.IsCustomExperiment,
-			RecentExperimentRunDetails: recentExperimentRunDetailsConv(ce.RecentExperimentRunDetails),
-			TotalExperimentRuns:        ce.TotalExperimentRuns,
-		}
+	for _, cem := range cems {
 		db.Save(&cem)
 	}
 
@@ -410,4 +227,128 @@ func (pc PostgresConnector) getGormDB() (*gorm.DB, error) {
 		os.Getenv("POSTGRES_PORT"),
 		os.Getenv("POSTGRES_SSL_MODE"))
 	return gorm.Open(postgres.Open(dsn), &gorm.Config{})
+}
+
+func (pc PostgresConnector) getTime(t int64) *time.Time {
+	if t == 0 {
+		return nil
+	}
+	time := time.Unix(t/1000, t%1000)
+	return &time
+}
+
+func (pc PostgresConnector) getChaosExperimentYamls(ce mongocollection.Revision) []model_chaos_experiment_yaml.ChaosExperimentYaml {
+	var mces []model_chaos_experiment_yaml.ChaosExperimentYaml
+	for _, t := range ce.ExperimentManifest.Spec.Templates {
+		if t.Name == "install-chaos-faults" {
+			for _, a := range t.Inputs.Artifacts {
+				var ce yamlfield.ChaosExperiment
+				err := yaml.Unmarshal([]byte(a.Raw.Data), &ce)
+				if err != nil {
+					panic(err)
+				}
+				mces = append(mces, model_chaos_experiment_yaml.ChaosExperimentYaml{
+					APIVersion: ce.APIVersion,
+					Description: model_chaos_experiment_yaml.ChaosExperimentYamlDescription{
+						Message: ce.Description.Message,
+					},
+					Kind: ce.Kind,
+					Metadata: model_chaos_experiment_yaml.ChaosExperimentYamlMetadata{
+						Name: ce.Metadata.Name,
+						Labels: model_chaos_experiment_yaml.ChaosExperimentYamlLabels{
+							Name:                     ce.Metadata.Labels.Name,
+							AppKubernetesIoPartOf:    ce.Metadata.Labels.AppKubernetesIoPartOf,
+							AppKubernetesIoComponent: ce.Metadata.Labels.AppKubernetesIoComponent,
+							AppKubernetesIoVersion:   ce.Metadata.Labels.AppKubernetesIoVersion,
+						},
+					},
+					Spec: model_chaos_experiment_yaml.ChaosExperimentYamlSpec{
+						Definition: model_chaos_experiment_yaml.ChaosExperimentYamlDefinition{
+							Scope: ce.Spec.Definition.Scope,
+							Permissions: util.SliceMap(ce.Spec.Definition.Permissions, func(perm yamlfield.Permission) model_chaos_experiment_yaml.ChaosExperimentYamlPermission {
+								return model_chaos_experiment_yaml.ChaosExperimentYamlPermission{
+									APIGroups: strings.Join(perm.APIGroups, ","),
+									Resources: strings.Join(perm.Resources, ","),
+									Verbs:     strings.Join(perm.Verbs, ","),
+								}
+							}),
+							Image:           ce.Spec.Definition.Image,
+							ImagePullPolicy: ce.Spec.Definition.ImagePullPolicy,
+							Args:            strings.Join(ce.Spec.Definition.Args, ","),
+							Command:         strings.Join(ce.Spec.Definition.Command, ","),
+							Env: util.SliceMap(ce.Spec.Definition.Env, func(env yamlfield.ChaosExperimentEnv) model_chaos_experiment_yaml.ChaosExperimentYamlEnv {
+								return model_chaos_experiment_yaml.ChaosExperimentYamlEnv{
+									Name:  env.Name,
+									Value: env.Value,
+								}
+							}),
+							Labels: model_chaos_experiment_yaml.ChaosExperimentYamlDefinitionLabels{
+								Name:                           ce.Spec.Definition.Labels.Name,
+								AppKubernetesIoPartOf:          ce.Spec.Definition.Labels.AppKubernetesIoPartOf,
+								AppKubernetesIoComponent:       ce.Spec.Definition.Labels.AppKubernetesIoComponent,
+								AppKubernetesIoRuntimeAPIUsage: ce.Spec.Definition.Labels.AppKubernetesIoRuntimeAPIUsage,
+								AppKubernetesIoVersion:         ce.Spec.Definition.Labels.AppKubernetesIoVersion,
+							},
+						},
+					},
+				})
+			}
+		}
+	}
+	return mces
+}
+
+func (pc PostgresConnector) getChaosEngineYamls(ce mongocollection.Revision) []model_chaos_engine_yaml.ChaosEngineYaml {
+	var mces []model_chaos_engine_yaml.ChaosEngineYaml
+	for _, t := range ce.ExperimentManifest.Spec.Templates {
+		if strings.Contains(t.Container.Image, "litmus-checker") {
+			for _, a := range t.Inputs.Artifacts {
+				var ce yamlfield.ChaosEngine
+				err := yaml.Unmarshal([]byte(a.Raw.Data), &ce)
+				if err != nil {
+					panic(err)
+				}
+				mces = append(mces, model_chaos_engine_yaml.ChaosEngineYaml{
+					APIVersion: ce.APIVersion,
+					Kind:       ce.Kind,
+					Metadata: model_chaos_engine_yaml.ChaosEngineYamlMetadata{
+						Namespace: ce.Metadata.Namespace,
+						Labels: model_chaos_engine_yaml.ChaosEngineYamlLabels{
+							WorkflowRunID: ce.Metadata.Labels.WorkflowRunID,
+							WorkflowName:  ce.Metadata.Labels.WorkflowName,
+						},
+						Annotations: model_chaos_engine_yaml.ChaosEngineYamlAnnotations{
+							ProbeRef: ce.Metadata.Annotations.ProbeRef,
+						},
+						GenerateName: ce.Metadata.GenerateName,
+					},
+					Spec: model_chaos_engine_yaml.ChaosEngineYamlSpec{
+						EngineState: ce.Spec.EngineState,
+						Appinfo: model_chaos_engine_yaml.ChaosEngineYamlAppInfo{
+							Appns:    ce.Spec.Appinfo.Appns,
+							Applabel: ce.Spec.Appinfo.Applabel,
+							Appkind:  ce.Spec.Appinfo.Appkind,
+						},
+						ChaosServiceAccount: ce.Spec.ChaosServiceAccount,
+						Experiments: util.SliceMap(ce.Spec.Experiments, func(exp yamlfield.ChaosEngineExperiment) model_chaos_engine_yaml.ChaosEngineYamlExperiment {
+							return model_chaos_engine_yaml.ChaosEngineYamlExperiment{
+								Name: exp.Name,
+								Spec: model_chaos_engine_yaml.ChaosEngineYamlExperimentSpec{
+									Components: model_chaos_engine_yaml.ChaosEngineYamlCompoments{
+										Env: util.SliceMap(exp.Spec.Components.Env, func(env yamlfield.ChaosEngineEnv) model_chaos_engine_yaml.ChaosEngineYamlEnv {
+											return model_chaos_engine_yaml.ChaosEngineYamlEnv{
+												Name:  env.Name,
+												Value: env.Value,
+											}
+										}),
+									},
+								},
+							}
+						}),
+					},
+				})
+			}
+		}
+	}
+	return mces
 }
