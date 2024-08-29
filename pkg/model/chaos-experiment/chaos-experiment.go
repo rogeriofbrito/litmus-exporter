@@ -155,7 +155,7 @@ type ChaosExperimentRecentExperimentRunDetail struct {
 	Completed       bool                   `gorm:"column:completed"`
 	RunSequence     int                    `gorm:"column:run_sequence"`
 	Probes          []ChaosExperimentProbe `gorm:"foreignKey:recent_run_details_id"`
-	ResiliencyScore int                    `gorm:"column:resiliency_score"`
+	ResiliencyScore float64                `gorm:"column:resiliency_score"`
 }
 
 type ChaosExperimentProbe struct {

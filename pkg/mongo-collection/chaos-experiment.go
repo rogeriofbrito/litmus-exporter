@@ -46,7 +46,7 @@ type RecentExperimentRunDetail struct {
 	Completed       bool    `bson:"completed"`
 	RunSequence     int     `bson:"run_sequence"`
 	Probes          []Probe `bson:"probes"`
-	ResiliencyScore int     `bson:"resiliency_score"`
+	ResiliencyScore float64 `bson:"resiliency_score"`
 }
 
 type Probe struct {
