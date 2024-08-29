@@ -1,7 +1,5 @@
 package jsonfield
 
-import "time"
-
 type ChaosExperimentRunExecutionData struct {
 	ExperimentType    string                            `json:"experimentType"`
 	RevisionID        string                            `json:"revisionID"`
@@ -58,7 +56,7 @@ type ChaosExperimentRunMetadata struct {
 	UID               string                   `json:"uid"`
 	ResourceVersion   string                   `json:"resourceVersion"`
 	Generation        int                      `json:"generation"`
-	CreationTimestamp time.Time                `json:"creationTimestamp"`
+	CreationTimestamp string                   `json:"creationTimestamp"`
 	Labels            ChaosExperimentRunLabels `json:"labels"`
 }
 

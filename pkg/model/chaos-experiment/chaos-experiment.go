@@ -16,6 +16,7 @@ type ChaosExperiment struct {
 	Tags        string     `gorm:"column:tags"`
 	UpdatedAt   *time.Time `gorm:"column:updated_at"`
 	CreatedAt   *time.Time `gorm:"column:created_at"`
+	//CreatedBy                  User                              `gorm:"constraint:OnUpdate:CASCADE,OnDelete:CASCADE;foreignKey:id"`
 	//UpdatedBy                  User                              `gorm:"constraint:OnUpdate:CASCADE,OnDelete:CASCADE;foreignKey:id"`
 	IsRemoved                  bool                                       `gorm:"column:is_removed"`
 	ProjectID                  string                                     `gorm:"column:project_id"`

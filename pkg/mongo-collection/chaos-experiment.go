@@ -14,6 +14,7 @@ type ChaosExperiment struct {
 	Tags                       []string                    `bson:"tags"`
 	UpdatedAt                  int64                       `bson:"updated_at"`
 	CreatedAt                  int64                       `bson:"created_at"`
+	CreatedBy                  User                        `bson:"created_by"`
 	UpdatedBy                  User                        `bson:"updated_by"`
 	IsRemoved                  bool                        `bson:"is_removed"`
 	ProjectID                  string                      `bson:"project_id"`
@@ -47,11 +48,6 @@ type RecentExperimentRunDetail struct {
 	RunSequence     int     `bson:"run_sequence"`
 	Probes          []Probe `bson:"probes"`
 	ResiliencyScore float64 `bson:"resiliency_score"`
-}
-
-type Probe struct {
-	FaultName  string   `bson:"fault_name"`
-	ProbeNames []string `bson:"probe_names"`
 }
 
 func (ce ChaosExperiment) ParseExperimentManifests() error {

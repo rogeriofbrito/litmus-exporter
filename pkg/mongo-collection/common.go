@@ -5,3 +5,8 @@ type User struct {
 	UserName string `bson:"username"`
 	Email    string `bson:"email"`
 }
+
+type Probe struct {
+	FaultName  string   `bson:"fault_name"`
+	ProbeNames []string `bson:"probe_names"`
+}

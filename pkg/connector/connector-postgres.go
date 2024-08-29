@@ -4,12 +4,14 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"strconv"
 	"strings"
 	"time"
 
 	jsonfield "github.com/rogeriofbrito/litmus-exporter/pkg/json-field"
 	model_chaos_engine_yaml "github.com/rogeriofbrito/litmus-exporter/pkg/model/chaos-engine-yaml"
 	model_chaos_experiment "github.com/rogeriofbrito/litmus-exporter/pkg/model/chaos-experiment"
+	model_chaos_experiment_run "github.com/rogeriofbrito/litmus-exporter/pkg/model/chaos-experiment-run"
 	model_chaos_experiment_yaml "github.com/rogeriofbrito/litmus-exporter/pkg/model/chaos-experiment-yaml"
 	mongocollection "github.com/rogeriofbrito/litmus-exporter/pkg/mongo-collection"
 	"github.com/rogeriofbrito/litmus-exporter/pkg/util"
@@ -71,6 +73,22 @@ func (pc PostgresConnector) Init(ctx context.Context) error {
 		&model_chaos_engine_yaml.ChaosEngineYamlExperimentSpec{},
 		&model_chaos_engine_yaml.ChaosEngineYamlCompoments{},
 		&model_chaos_engine_yaml.ChaosEngineYamlEnv{},
+		//ChaosExperimentRun
+		&model_chaos_experiment_run.ChaosExperimentRun{},
+		&model_chaos_experiment_run.ChaosExperimentRunProbe{},
+		&model_chaos_experiment_run.ChaosExperimentRunExecutionData{},
+		&model_chaos_experiment_run.ChaosExperimentRunNode{},
+		&model_chaos_experiment_run.ChaosExperimentRunChaosData{},
+		&model_chaos_experiment_run.ChaosExperimentRunChaosResult{},
+		&model_chaos_experiment_run.ChaosExperimentRunMetadata{},
+		&model_chaos_experiment_run.ChaosExperimentRunSpec{},
+		&model_chaos_experiment_run.ChaosExperimentRunStatus{},
+		&model_chaos_experiment_run.ChaosExperimentRunLabels{},
+		&model_chaos_experiment_run.ChaosExperimentRunExperimentStatus{},
+		&model_chaos_experiment_run.ChaosExperimentRunProbeStatus{},
+		&model_chaos_experiment_run.ChaosExperimentRunHistory{},
+		&model_chaos_experiment_run.ChaosExperimentRunProbeStatusesStatus{},
+		&model_chaos_experiment_run.ChaosExperimentRunHistoryTarget{},
 	)
 	if err != nil {
 		return err
@@ -91,8 +109,8 @@ func (pc PostgresConnector) SaveChaosExperiments(ctx context.Context, ces []mong
 			Name:        ce.Name,
 			Description: ce.Description,
 			Tags:        strings.Join(ce.Tags, ","),
-			UpdatedAt:   pc.getTime(ce.UpdatedAt),
-			CreatedAt:   pc.getTime(ce.CreatedAt),
+			UpdatedAt:   pc.getTimeFromMiliSecInt64(ce.UpdatedAt),
+			CreatedAt:   pc.getTimeFromMiliSecInt64(ce.CreatedAt),
 			/*UpdatedBy: model_chaos_experiment.User{
 				UserID:   ce.UpdatedBy.UserID,
 				UserName: ce.UpdatedBy.UserName,
@@ -112,7 +130,7 @@ func (pc PostgresConnector) SaveChaosExperiments(ctx context.Context, ces []mong
 						APIVersion: rev.ExperimentManifest.APIVersion,
 						Metadata: model_chaos_experiment.ChaosExperimentMetadata{
 							Name:              rev.ExperimentManifest.Metadata.Name,
-							CreationTimestamp: pc.getTime(rev.ExperimentManifest.Metadata.CreationTimestamp),
+							CreationTimestamp: pc.getTimeFromMiliSecInt64(rev.ExperimentManifest.Metadata.CreationTimestamp),
 							Labels: model_chaos_experiment.ChaosExperimentLabels{
 								InfraID:              rev.ExperimentManifest.Metadata.Labels.InfraID,
 								RevisionID:           rev.ExperimentManifest.Metadata.Labels.RevisionID,
@@ -165,8 +183,8 @@ func (pc PostgresConnector) SaveChaosExperiments(ctx context.Context, ces []mong
 							},
 						},
 						Status: model_chaos_experiment.ChaosExperimentStatus{
-							StartedAt:  pc.getTime(rev.ExperimentManifest.Status.StartedAt),
-							FinishedAt: pc.getTime(rev.ExperimentManifest.Status.FinishedAt),
+							StartedAt:  pc.getTimeFromMiliSecInt64(rev.ExperimentManifest.Status.StartedAt),
+							FinishedAt: pc.getTimeFromMiliSecInt64(rev.ExperimentManifest.Status.FinishedAt),
 						},
 					},
 					ChaosExperimentYamls: pc.getChaosExperimentYamls(rev),
@@ -176,8 +194,8 @@ func (pc PostgresConnector) SaveChaosExperiments(ctx context.Context, ces []mong
 			IsCustomExperiment: ce.IsCustomExperiment,
 			RecentExperimentRunDetails: util.SliceMap(ce.RecentExperimentRunDetails, func(detail mongocollection.RecentExperimentRunDetail) model_chaos_experiment.ChaosExperimentRecentExperimentRunDetail {
 				return model_chaos_experiment.ChaosExperimentRecentExperimentRunDetail{
-					UpdatedAt: pc.getTime(detail.UpdatedAt),
-					CreatedAt: pc.getTime(detail.CreatedAt),
+					UpdatedAt: pc.getTimeFromMiliSecInt64(detail.UpdatedAt),
+					CreatedAt: pc.getTimeFromMiliSecInt64(detail.CreatedAt),
 					/*CreatedBy: model_chaos_experiment.User{
 						UserID:   ci.CreatedBy.UserID,
 						UserName: ci.CreatedBy.UserName,
@@ -216,6 +234,73 @@ func (pc PostgresConnector) SaveChaosExperiments(ctx context.Context, ces []mong
 }
 
 func (pc PostgresConnector) SaveChaosExperimentRuns(ctx context.Context, cers []mongocollection.ChaosExperimentRun) error {
+	db, err := pc.getGormDB()
+	if err != nil {
+		return err
+	}
+
+	cerms := util.SliceMap(cers, func(cer mongocollection.ChaosExperimentRun) model_chaos_experiment_run.ChaosExperimentRun {
+		return model_chaos_experiment_run.ChaosExperimentRun{
+			MongoID:   cer.ID.String(),
+			ProjectID: cer.ProjectID,
+			UpdatedAt: pc.getTimeFromMiliSecInt64(cer.UpdatedAt),
+			CreatedAt: pc.getTimeFromMiliSecInt64(cer.CreatedAt),
+			/*CreatedBy: model_chaos_experiment.User{
+				UserID:   ci.CreatedBy.UserID,
+				UserName: ci.CreatedBy.UserName,
+				Email:    ci.CreatedBy.Email,
+			},
+			UpdatedBy: model_chaos_experiment.User{
+				UserID:   ci.UpdatedBy.UserID,
+				UserName: ci.UpdatedBy.UserName,
+				Email:    ci.UpdatedBy.Email,
+			},*/
+			IsRemoved:       cer.IsRemoved,
+			InfraID:         cer.InfraID,
+			ExperimentRunID: cer.ExperimentRunID,
+			ExperimentID:    cer.ExperimentID,
+			ExperimentName:  cer.ExperimentName,
+			Phase:           cer.Phase,
+			Probes: util.SliceMap(cer.Probes, func(probe mongocollection.Probe) model_chaos_experiment_run.ChaosExperimentRunProbe {
+				return model_chaos_experiment_run.ChaosExperimentRunProbe{
+					FaultName:  probe.FaultName,
+					ProbeNames: strings.Join(probe.ProbeNames, ","),
+				}
+			}),
+			ExecutionData: model_chaos_experiment_run.ChaosExperimentRunExecutionData{
+				ExperimentType:    cer.ExecutionData.ExperimentType,
+				RevisionID:        cer.ExecutionData.RevisionID,
+				NotifyID:          cer.ExecutionData.NotifyID,
+				ExperimentID:      cer.ExecutionData.ExperimentID,
+				EventType:         cer.ExecutionData.EventType,
+				UID:               cer.ExecutionData.UID,
+				Namespace:         cer.ExecutionData.Namespace,
+				Name:              cer.ExecutionData.Name,
+				CreationTimestamp: pc.getTimeFromSecString(cer.ExecutionData.CreationTimestamp),
+				Phase:             cer.ExecutionData.Phase,
+				Message:           cer.ExecutionData.Message,
+				StartedAt:         pc.getTimeFromSecString(cer.ExecutionData.StartedAt),
+				FinishedAt:        pc.getTimeFromSecString(cer.ExecutionData.FinishedAt),
+				Nodes:             pc.getNodes(cer.ExecutionData.Nodes),
+			},
+			RevisionID:      cer.RevisionID,
+			NotifyID:        cer.NotifyID,
+			ResiliencyScore: cer.ResiliencyScore,
+			RunSequence:     cer.RunSequence,
+			Completed:       cer.Completed,
+			FaultsAwaited:   cer.FaultsAwaited,
+			FaultsFailed:    cer.FaultsFailed,
+			FaultsNa:        cer.FaultsNa,
+			FaultsPassed:    cer.FaultsPassed,
+			FaultsStopped:   cer.FaultsStopped,
+			TotalFaults:     cer.TotalFaults,
+		}
+	})
+
+	for _, cerm := range cerms {
+		db.Save(&cerm)
+	}
+
 	return nil
 }
 
@@ -230,12 +315,32 @@ func (pc PostgresConnector) getGormDB() (*gorm.DB, error) {
 	return gorm.Open(postgres.Open(dsn), &gorm.Config{})
 }
 
-func (pc PostgresConnector) getTime(t int64) *time.Time {
+func (pc PostgresConnector) getTimeFromMiliSecInt64(t int64) *time.Time {
 	if t == 0 {
 		return nil
 	}
 	time := time.Unix(t/1000, t%1000)
 	return &time
+}
+
+func (pc PostgresConnector) getTimeFromSecString(ts string) *time.Time {
+	tn, err := strconv.ParseInt(ts, 10, 64)
+	if err != nil {
+		return nil
+	}
+	time := time.Unix(tn, 0)
+	return &time
+}
+
+func (pc PostgresConnector) getTimeFromIso8601String(iso8601Date string) *time.Time {
+	if iso8601Date == "" {
+		return nil
+	}
+	parsedTime, err := time.Parse(time.RFC3339, iso8601Date)
+	if err != nil {
+		return nil
+	}
+	return &parsedTime
 }
 
 func (pc PostgresConnector) getChaosExperimentYamls(ce mongocollection.Revision) []model_chaos_experiment_yaml.ChaosExperimentYaml {
@@ -352,4 +457,94 @@ func (pc PostgresConnector) getChaosEngineYamls(ce mongocollection.Revision) []m
 		}
 	}
 	return mces
+}
+
+func (pc PostgresConnector) getNodes(cerns map[string]jsonfield.ChaosExperimentRunNode) []model_chaos_experiment_run.ChaosExperimentRunNode {
+	var mcerns []model_chaos_experiment_run.ChaosExperimentRunNode
+	for name, cern := range cerns {
+		mcerns = append(mcerns, model_chaos_experiment_run.ChaosExperimentRunNode{
+			NodeName:   name,
+			Name:       cern.Name,
+			Phase:      cern.Phase,
+			Message:    cern.Message,
+			StartedAt:  pc.getTimeFromSecString(cern.StartedAt),
+			FinishedAt: pc.getTimeFromSecString(cern.FinishedAt),
+			Children:   strings.Join(cern.Children, ","),
+			Type:       cern.Type,
+			ChaosData: model_chaos_experiment_run.ChaosExperimentRunChaosData{
+				EngineUID:              cern.ChaosData.EngineUID,
+				EngineContext:          cern.ChaosData.EngineContext,
+				EngineName:             cern.ChaosData.EngineName,
+				Namespace:              cern.ChaosData.Namespace,
+				ExperimentName:         cern.ChaosData.ExperimentName,
+				ExperimentStatus:       cern.ChaosData.ExperimentStatus,
+				LastUpdatedAt:          cern.ChaosData.LastUpdatedAt,
+				ExperimentVerdict:      cern.ChaosData.ExperimentVerdict,
+				ExperimentPod:          cern.ChaosData.ExperimentPod,
+				RunnerPod:              cern.ChaosData.RunnerPod,
+				ProbeSuccessPercentage: cern.ChaosData.ProbeSuccessPercentage,
+				FailStep:               cern.ChaosData.FailStep,
+				ChaosResult: model_chaos_experiment_run.ChaosExperimentRunChaosResult{
+					Metadata: model_chaos_experiment_run.ChaosExperimentRunMetadata{
+						Name:              cern.ChaosData.ChaosResult.Metadata.Name,
+						Namespace:         cern.ChaosData.ChaosResult.Metadata.Namespace,
+						UID:               cern.ChaosData.ChaosResult.Metadata.UID,
+						ResourceVersion:   cern.ChaosData.ChaosResult.Metadata.ResourceVersion,
+						Generation:        cern.ChaosData.ChaosResult.Metadata.Generation,
+						CreationTimestamp: pc.getTimeFromIso8601String(cern.ChaosData.ChaosResult.Metadata.CreationTimestamp),
+						Labels: model_chaos_experiment_run.ChaosExperimentRunLabels{
+							AppKubernetesIoComponent:       cern.ChaosData.ChaosResult.Metadata.Labels.AppKubernetesIoComponent,
+							AppKubernetesIoPartOf:          cern.ChaosData.ChaosResult.Metadata.Labels.AppKubernetesIoPartOf,
+							AppKubernetesIoVersion:         cern.ChaosData.ChaosResult.Metadata.Labels.AppKubernetesIoVersion,
+							BatchKubernetesIoControllerUID: cern.ChaosData.ChaosResult.Metadata.Labels.BatchKubernetesIoControllerUID,
+							BatchKubernetesIoJobName:       cern.ChaosData.ChaosResult.Metadata.Labels.BatchKubernetesIoJobName,
+							ChaosUID:                       cern.ChaosData.ChaosResult.Metadata.Labels.ChaosUID,
+							ControllerUID:                  cern.ChaosData.ChaosResult.Metadata.Labels.ControllerUID,
+							InfraID:                        cern.ChaosData.ChaosResult.Metadata.Labels.InfraID,
+							JobName:                        cern.ChaosData.ChaosResult.Metadata.Labels.JobName,
+							Name:                           cern.ChaosData.ChaosResult.Metadata.Labels.Name,
+							StepPodName:                    cern.ChaosData.ChaosResult.Metadata.Labels.StepPodName,
+							WorkflowName:                   cern.ChaosData.ChaosResult.Metadata.Labels.WorkflowName,
+							WorkflowRunID:                  cern.ChaosData.ChaosResult.Metadata.Labels.WorkflowRunID,
+						},
+					},
+					Spec: model_chaos_experiment_run.ChaosExperimentRunSpec{
+						Engine:     cern.ChaosData.ChaosResult.Spec.Engine,
+						Experiment: cern.ChaosData.ChaosResult.Spec.Experiment,
+					},
+					Status: model_chaos_experiment_run.ChaosExperimentRunStatus{
+						ExperimentStatus: model_chaos_experiment_run.ChaosExperimentRunExperimentStatus{
+							Phase:                  cern.ChaosData.ChaosResult.Status.ExperimentStatus.Phase,
+							Verdict:                cern.ChaosData.ChaosResult.Status.ExperimentStatus.Verdict,
+							ProbeSuccessPercentage: cern.ChaosData.ChaosResult.Status.ExperimentStatus.ProbeSuccessPercentage,
+						},
+						ProbeStatuses: util.SliceMap(cern.ChaosData.ChaosResult.Status.ProbeStatuses, func(probeStatus jsonfield.ChaosExperimentRunProbeStatuses) model_chaos_experiment_run.ChaosExperimentRunProbeStatus {
+							return model_chaos_experiment_run.ChaosExperimentRunProbeStatus{
+								Name: probeStatus.Name,
+								Type: probeStatus.Type,
+								Mode: probeStatus.Mode,
+								Status: model_chaos_experiment_run.ChaosExperimentRunProbeStatusesStatus{
+									Verdict:     probeStatus.Status.Verdict,
+									Description: probeStatus.Status.Description,
+								},
+							}
+						}),
+						History: model_chaos_experiment_run.ChaosExperimentRunHistory{
+							PassedRuns:  cern.ChaosData.ChaosResult.Status.History.PassedRuns,
+							FailedRuns:  cern.ChaosData.ChaosResult.Status.History.FailedRuns,
+							StoppedRuns: cern.ChaosData.ChaosResult.Status.History.StoppedRuns,
+							Targets: util.SliceMap(cern.ChaosData.ChaosResult.Status.History.Targets, func(target jsonfield.ChaosExperimentRunHistoryTarget) model_chaos_experiment_run.ChaosExperimentRunHistoryTarget {
+								return model_chaos_experiment_run.ChaosExperimentRunHistoryTarget{
+									Name:        target.Name,
+									Kind:        target.Kind,
+									ChaosStatus: target.ChaosStatus,
+								}
+							}),
+						},
+					},
+				},
+			},
+		})
+	}
+	return mcerns
 }
