@@ -45,6 +45,15 @@ func main() {
 
 	ctx = context.Background()
 
+	p, err := me.ProjectsExtractor(ctx)
+	if err != nil {
+		log.Fatal(err)
+	}
+	err = c.SaveProjects(ctx, p)
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	ce, err := me.ChaosExperimentsExtractor(ctx)
 	if err != nil {
 		log.Fatal(err)

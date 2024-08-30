@@ -13,6 +13,7 @@ import (
 	model_chaos_experiment "github.com/rogeriofbrito/litmus-exporter/pkg/model/chaos-experiment"
 	model_chaos_experiment_run "github.com/rogeriofbrito/litmus-exporter/pkg/model/chaos-experiment-run"
 	model_chaos_experiment_yaml "github.com/rogeriofbrito/litmus-exporter/pkg/model/chaos-experiment-yaml"
+	model_project "github.com/rogeriofbrito/litmus-exporter/pkg/model/project"
 	mongocollection "github.com/rogeriofbrito/litmus-exporter/pkg/mongo-collection"
 	"github.com/rogeriofbrito/litmus-exporter/pkg/util"
 	yamlfield "github.com/rogeriofbrito/litmus-exporter/pkg/yaml-field"
@@ -34,6 +35,9 @@ func (pc PostgresConnector) Init(ctx context.Context) error {
 	}
 
 	err = db.AutoMigrate(
+		//Project
+		&model_project.Project{},
+		&model_project.ProjectMembers{},
 		//ChaosExperiment
 		&model_chaos_experiment.ChaosExperiment{},
 		&model_chaos_experiment.User{},
@@ -92,6 +96,25 @@ func (pc PostgresConnector) Init(ctx context.Context) error {
 	)
 	if err != nil {
 		return err
+	}
+
+	return nil
+}
+
+func (pc PostgresConnector) SaveProjects(ctx context.Context, projs []mongocollection.Project) error {
+	db, err := pc.getGormDB()
+	if err != nil {
+		return err
+	}
+
+	pms := util.SliceMap(projs, func(p mongocollection.Project) model_project.Project {
+		return model_project.Project{
+			//TODO
+		}
+	})
+
+	for _, cem := range pms {
+		db.Save(&cem)
 	}
 
 	return nil

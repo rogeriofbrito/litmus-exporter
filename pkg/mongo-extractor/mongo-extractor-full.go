@@ -18,6 +18,28 @@ type FullMongoExtractor struct {
 	mongoClient *mongo.Client
 }
 
+func (fme FullMongoExtractor) ProjectsExtractor(ctx context.Context) ([]mongocollection.Project, error) {
+	mongoCollection := fme.mongoClient.Database("auth").Collection("project")
+	cur, err := mongoCollection.Find(ctx, bson.D{})
+	if err != nil {
+		return nil, err
+	}
+	defer cur.Close(ctx)
+
+	var collections []mongocollection.Project
+
+	for cur.Next(ctx) {
+		var collection mongocollection.Project
+		err := cur.Decode(&collection)
+		if err != nil {
+			return nil, err
+		}
+		collections = append(collections, collection)
+	}
+
+	return collections, nil
+}
+
 func (fme FullMongoExtractor) ChaosExperimentsExtractor(ctx context.Context) ([]mongocollection.ChaosExperiment, error) {
 	mongoCollection := fme.mongoClient.Database("litmus").Collection("chaosExperiments")
 	cur, err := mongoCollection.Find(ctx, bson.D{})
