@@ -8,13 +8,15 @@ import (
 	"strings"
 	"time"
 
+	"github.com/litmuschaos/litmus/chaoscenter/graphql/server/pkg/database/mongodb/chaos_experiment"
+	"github.com/litmuschaos/litmus/chaoscenter/graphql/server/pkg/database/mongodb/chaos_experiment_run"
+	"github.com/litmuschaos/litmus/chaoscenter/graphql/server/pkg/database/mongodb/project"
 	jsonfield "github.com/rogeriofbrito/litmus-exporter/pkg/json-field"
 	model_chaos_engine_yaml "github.com/rogeriofbrito/litmus-exporter/pkg/model/chaos-engine-yaml"
 	model_chaos_experiment "github.com/rogeriofbrito/litmus-exporter/pkg/model/chaos-experiment"
 	model_chaos_experiment_run "github.com/rogeriofbrito/litmus-exporter/pkg/model/chaos-experiment-run"
 	model_chaos_experiment_yaml "github.com/rogeriofbrito/litmus-exporter/pkg/model/chaos-experiment-yaml"
 	model_project "github.com/rogeriofbrito/litmus-exporter/pkg/model/project"
-	mongocollection "github.com/rogeriofbrito/litmus-exporter/pkg/mongo-collection"
 	"github.com/rogeriofbrito/litmus-exporter/pkg/util"
 	yamlfield "github.com/rogeriofbrito/litmus-exporter/pkg/yaml-field"
 	"gopkg.in/yaml.v2"
@@ -101,13 +103,13 @@ func (pc PostgresConnector) Init(ctx context.Context) error {
 	return nil
 }
 
-func (pc PostgresConnector) SaveProjects(ctx context.Context, projs []mongocollection.Project) error {
+func (pc PostgresConnector) SaveProjects(ctx context.Context, projs []project.Project) error {
 	db, err := pc.getGormDB()
 	if err != nil {
 		return err
 	}
 
-	pms := util.SliceMap(projs, func(p mongocollection.Project) model_project.Project {
+	pms := util.SliceMap(projs, func(p project.Project) model_project.Project {
 		return model_project.Project{
 			//TODO
 		}
@@ -120,15 +122,14 @@ func (pc PostgresConnector) SaveProjects(ctx context.Context, projs []mongocolle
 	return nil
 }
 
-func (pc PostgresConnector) SaveChaosExperiments(ctx context.Context, ces []mongocollection.ChaosExperiment) error {
+func (pc PostgresConnector) SaveChaosExperiments(ctx context.Context, ces []chaos_experiment.ChaosExperimentRequest) error {
 	db, err := pc.getGormDB()
 	if err != nil {
 		return err
 	}
 
-	cems := util.SliceMap(ces, func(ce mongocollection.ChaosExperiment) model_chaos_experiment.ChaosExperiment {
+	cems := util.SliceMap(ces, func(ce chaos_experiment.ChaosExperimentRequest) model_chaos_experiment.ChaosExperiment {
 		return model_chaos_experiment.ChaosExperiment{
-			MongoID:     ce.ID.String(),
 			Name:        ce.Name,
 			Description: ce.Description,
 			Tags:        strings.Join(ce.Tags, ","),
@@ -144,25 +145,29 @@ func (pc PostgresConnector) SaveChaosExperiments(ctx context.Context, ces []mong
 			ExperimentID:   ce.ExperimentID,
 			CronSyntax:     ce.CronSyntax,
 			InfraID:        ce.InfraID,
-			ExperimentType: ce.ExperimentType,
-			Revision: util.SliceMap(ce.Revision, func(rev mongocollection.Revision) model_chaos_experiment.ChaosExperimentRevision {
+			ExperimentType: string(ce.ExperimentType),
+			Revision: util.SliceMap(ce.Revision, func(rev chaos_experiment.ExperimentRevision) model_chaos_experiment.ChaosExperimentRevision {
+				em, err := util.ParseExperimentManifests(rev)
+				if err != nil {
+					panic(err)
+				}
 				return model_chaos_experiment.ChaosExperimentRevision{
-					RevisionID: rev.RevisionId,
+					RevisionID: rev.RevisionID,
 					ExperimentManifest: model_chaos_experiment.ChaosExperimentManifest{
-						Kind:       rev.ExperimentManifest.Kind,
-						APIVersion: rev.ExperimentManifest.APIVersion,
+						Kind:       em.Kind,
+						APIVersion: em.APIVersion,
 						Metadata: model_chaos_experiment.ChaosExperimentMetadata{
-							Name:              rev.ExperimentManifest.Metadata.Name,
-							CreationTimestamp: pc.getTimeFromMiliSecInt64(rev.ExperimentManifest.Metadata.CreationTimestamp),
+							Name:              em.Metadata.Name,
+							CreationTimestamp: pc.getTimeFromMiliSecInt64(em.Metadata.CreationTimestamp),
 							Labels: model_chaos_experiment.ChaosExperimentLabels{
-								InfraID:              rev.ExperimentManifest.Metadata.Labels.InfraID,
-								RevisionID:           rev.ExperimentManifest.Metadata.Labels.RevisionID,
-								WorkflowID:           rev.ExperimentManifest.Metadata.Labels.WorkflowID,
-								ControllerInstanceID: rev.ExperimentManifest.Metadata.Labels.WorkflowsArgoprojIoControllerInstanceid,
+								InfraID:              em.Metadata.Labels.InfraID,
+								RevisionID:           em.Metadata.Labels.RevisionID,
+								WorkflowID:           em.Metadata.Labels.WorkflowID,
+								ControllerInstanceID: em.Metadata.Labels.WorkflowsArgoprojIoControllerInstanceid,
 							},
 						},
 						Spec: model_chaos_experiment.ChaosExperimentSpec{
-							Templates: util.SliceMap(rev.ExperimentManifest.Spec.Templates, func(temp jsonfield.Template) model_chaos_experiment.ChaosExperimentTemplate {
+							Templates: util.SliceMap(em.Spec.Templates, func(temp jsonfield.Template) model_chaos_experiment.ChaosExperimentTemplate {
 								return model_chaos_experiment.ChaosExperimentTemplate{
 									Name: temp.Name,
 									Steps: model_chaos_experiment.ChaosExperimentSteps{
@@ -187,35 +192,35 @@ func (pc PostgresConnector) SaveChaosExperiments(ctx context.Context, ces []mong
 									},
 								}
 							}),
-							Entrypoint: rev.ExperimentManifest.Spec.Entrypoint,
+							Entrypoint: em.Spec.Entrypoint,
 							Arguments: model_chaos_experiment.ChaosExperimentArguments{
-								Parameters: util.SliceMap(rev.ExperimentManifest.Spec.Arguments.Parameters, func(param jsonfield.Parameter) model_chaos_experiment.ChaosExperimentParameter {
+								Parameters: util.SliceMap(em.Spec.Arguments.Parameters, func(param jsonfield.Parameter) model_chaos_experiment.ChaosExperimentParameter {
 									return model_chaos_experiment.ChaosExperimentParameter{
 										Name:  param.Name,
 										Value: param.Value,
 									}
 								}),
 							},
-							ServiceAccountName: rev.ExperimentManifest.Spec.ServiceAccountName,
+							ServiceAccountName: em.Spec.ServiceAccountName,
 							PodGC: model_chaos_experiment.ChaosExperimentPodGC{
-								Strategy: rev.ExperimentManifest.Spec.PodGC.Strategy,
+								Strategy: em.Spec.PodGC.Strategy,
 							},
 							SecurityContext: model_chaos_experiment.ChaosExperimentSecurityContext{
-								RunAsUser:    rev.ExperimentManifest.Spec.SecurityContext.RunAsUser,
-								RunAsNonRoot: rev.ExperimentManifest.Spec.SecurityContext.RunAsNonRoot,
+								RunAsUser:    em.Spec.SecurityContext.RunAsUser,
+								RunAsNonRoot: em.Spec.SecurityContext.RunAsNonRoot,
 							},
 						},
 						Status: model_chaos_experiment.ChaosExperimentStatus{
-							StartedAt:  pc.getTimeFromMiliSecInt64(rev.ExperimentManifest.Status.StartedAt),
-							FinishedAt: pc.getTimeFromMiliSecInt64(rev.ExperimentManifest.Status.FinishedAt),
+							StartedAt:  pc.getTimeFromMiliSecInt64(em.Status.StartedAt),
+							FinishedAt: pc.getTimeFromMiliSecInt64(em.Status.FinishedAt),
 						},
 					},
-					ChaosExperimentYamls: pc.getChaosExperimentYamls(rev),
-					ChaosEngineYamls:     pc.getChaosEngineYamls(rev),
+					ChaosExperimentYamls: pc.getChaosExperimentYamls(em),
+					ChaosEngineYamls:     pc.getChaosEngineYamls(em),
 				}
 			}),
 			IsCustomExperiment: ce.IsCustomExperiment,
-			RecentExperimentRunDetails: util.SliceMap(ce.RecentExperimentRunDetails, func(detail mongocollection.RecentExperimentRunDetail) model_chaos_experiment.ChaosExperimentRecentExperimentRunDetail {
+			RecentExperimentRunDetails: util.SliceMap(ce.RecentExperimentRunDetails, func(detail chaos_experiment.ExperimentRunDetail) model_chaos_experiment.ChaosExperimentRecentExperimentRunDetail {
 				return model_chaos_experiment.ChaosExperimentRecentExperimentRunDetail{
 					UpdatedAt: pc.getTimeFromMiliSecInt64(detail.UpdatedAt),
 					CreatedAt: pc.getTimeFromMiliSecInt64(detail.CreatedAt),
@@ -236,7 +241,7 @@ func (pc PostgresConnector) SaveChaosExperiments(ctx context.Context, ces []mong
 					NotifyID:        detail.NotifyID,
 					Completed:       detail.Completed,
 					RunSequence:     detail.RunSequence,
-					Probes: util.SliceMap(detail.Probes, func(probe mongocollection.Probe) model_chaos_experiment.ChaosExperimentProbe {
+					Probes: util.SliceMap(detail.Probe, func(probe chaos_experiment.Probes) model_chaos_experiment.ChaosExperimentProbe {
 						return model_chaos_experiment.ChaosExperimentProbe{
 							FaultName:  probe.FaultName,
 							ProbeNames: strings.Join(probe.ProbeNames, ","),
@@ -256,15 +261,19 @@ func (pc PostgresConnector) SaveChaosExperiments(ctx context.Context, ces []mong
 	return nil
 }
 
-func (pc PostgresConnector) SaveChaosExperimentRuns(ctx context.Context, cers []mongocollection.ChaosExperimentRun) error {
+func (pc PostgresConnector) SaveChaosExperimentRuns(ctx context.Context, cers []chaos_experiment_run.ChaosExperimentRun) error {
 	db, err := pc.getGormDB()
 	if err != nil {
 		return err
 	}
 
-	cerms := util.SliceMap(cers, func(cer mongocollection.ChaosExperimentRun) model_chaos_experiment_run.ChaosExperimentRun {
+	cerms := util.SliceMap(cers, func(cer chaos_experiment_run.ChaosExperimentRun) model_chaos_experiment_run.ChaosExperimentRun {
+		ed, err := util.ParseExecutionData(cer)
+		if err != nil {
+			panic(err)
+		}
+
 		return model_chaos_experiment_run.ChaosExperimentRun{
-			MongoID:   cer.ID.String(),
 			ProjectID: cer.ProjectID,
 			UpdatedAt: pc.getTimeFromMiliSecInt64(cer.UpdatedAt),
 			CreatedAt: pc.getTimeFromMiliSecInt64(cer.CreatedAt),
@@ -284,27 +293,27 @@ func (pc PostgresConnector) SaveChaosExperimentRuns(ctx context.Context, cers []
 			ExperimentID:    cer.ExperimentID,
 			ExperimentName:  cer.ExperimentName,
 			Phase:           cer.Phase,
-			Probes: util.SliceMap(cer.Probes, func(probe mongocollection.Probe) model_chaos_experiment_run.ChaosExperimentRunProbe {
+			Probes: util.SliceMap(cer.Probes, func(probe chaos_experiment_run.Probes) model_chaos_experiment_run.ChaosExperimentRunProbe {
 				return model_chaos_experiment_run.ChaosExperimentRunProbe{
 					FaultName:  probe.FaultName,
 					ProbeNames: strings.Join(probe.ProbeNames, ","),
 				}
 			}),
 			ExecutionData: model_chaos_experiment_run.ChaosExperimentRunExecutionData{
-				ExperimentType:    cer.ExecutionData.ExperimentType,
-				RevisionID:        cer.ExecutionData.RevisionID,
-				NotifyID:          cer.ExecutionData.NotifyID,
-				ExperimentID:      cer.ExecutionData.ExperimentID,
-				EventType:         cer.ExecutionData.EventType,
-				UID:               cer.ExecutionData.UID,
-				Namespace:         cer.ExecutionData.Namespace,
-				Name:              cer.ExecutionData.Name,
-				CreationTimestamp: pc.getTimeFromSecString(cer.ExecutionData.CreationTimestamp),
-				Phase:             cer.ExecutionData.Phase,
-				Message:           cer.ExecutionData.Message,
-				StartedAt:         pc.getTimeFromSecString(cer.ExecutionData.StartedAt),
-				FinishedAt:        pc.getTimeFromSecString(cer.ExecutionData.FinishedAt),
-				Nodes:             pc.getNodes(cer.ExecutionData.Nodes),
+				ExperimentType:    ed.ExperimentType,
+				RevisionID:        ed.RevisionID,
+				NotifyID:          ed.NotifyID,
+				ExperimentID:      ed.ExperimentID,
+				EventType:         ed.EventType,
+				UID:               ed.UID,
+				Namespace:         ed.Namespace,
+				Name:              ed.Name,
+				CreationTimestamp: pc.getTimeFromSecString(ed.CreationTimestamp),
+				Phase:             ed.Phase,
+				Message:           ed.Message,
+				StartedAt:         pc.getTimeFromSecString(ed.StartedAt),
+				FinishedAt:        pc.getTimeFromSecString(ed.FinishedAt),
+				Nodes:             pc.getNodes(ed.Nodes),
 			},
 			RevisionID:      cer.RevisionID,
 			NotifyID:        cer.NotifyID,
@@ -313,7 +322,7 @@ func (pc PostgresConnector) SaveChaosExperimentRuns(ctx context.Context, cers []
 			Completed:       cer.Completed,
 			FaultsAwaited:   cer.FaultsAwaited,
 			FaultsFailed:    cer.FaultsFailed,
-			FaultsNa:        cer.FaultsNa,
+			FaultsNa:        cer.FaultsNA,
 			FaultsPassed:    cer.FaultsPassed,
 			FaultsStopped:   cer.FaultsStopped,
 			TotalFaults:     cer.TotalFaults,
@@ -366,9 +375,9 @@ func (pc PostgresConnector) getTimeFromIso8601String(iso8601Date string) *time.T
 	return &parsedTime
 }
 
-func (pc PostgresConnector) getChaosExperimentYamls(ce mongocollection.Revision) []model_chaos_experiment_yaml.ChaosExperimentYaml {
+func (pc PostgresConnector) getChaosExperimentYamls(em *jsonfield.ExperimentManifest) []model_chaos_experiment_yaml.ChaosExperimentYaml {
 	var mces []model_chaos_experiment_yaml.ChaosExperimentYaml
-	for _, t := range ce.ExperimentManifest.Spec.Templates {
+	for _, t := range em.Spec.Templates {
 		if t.Name == "install-chaos-faults" {
 			for _, a := range t.Inputs.Artifacts {
 				var ce yamlfield.ChaosExperiment
@@ -427,9 +436,9 @@ func (pc PostgresConnector) getChaosExperimentYamls(ce mongocollection.Revision)
 	return mces
 }
 
-func (pc PostgresConnector) getChaosEngineYamls(ce mongocollection.Revision) []model_chaos_engine_yaml.ChaosEngineYaml {
+func (pc PostgresConnector) getChaosEngineYamls(em *jsonfield.ExperimentManifest) []model_chaos_engine_yaml.ChaosEngineYaml {
 	var mces []model_chaos_engine_yaml.ChaosEngineYaml
-	for _, t := range ce.ExperimentManifest.Spec.Templates {
+	for _, t := range em.Spec.Templates {
 		if strings.Contains(t.Container.Image, "litmus-checker") {
 			for _, a := range t.Inputs.Artifacts {
 				var ce yamlfield.ChaosEngine

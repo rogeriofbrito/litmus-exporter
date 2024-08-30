@@ -3,7 +3,9 @@ package mongoextractor
 import (
 	"context"
 
-	mongocollection "github.com/rogeriofbrito/litmus-exporter/pkg/mongo-collection"
+	"github.com/litmuschaos/litmus/chaoscenter/graphql/server/pkg/database/mongodb/chaos_experiment"
+	"github.com/litmuschaos/litmus/chaoscenter/graphql/server/pkg/database/mongodb/chaos_experiment_run"
+	"github.com/litmuschaos/litmus/chaoscenter/graphql/server/pkg/database/mongodb/project"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 )
@@ -18,7 +20,7 @@ type FullMongoExtractor struct {
 	mongoClient *mongo.Client
 }
 
-func (fme FullMongoExtractor) ProjectsExtractor(ctx context.Context) ([]mongocollection.Project, error) {
+func (fme FullMongoExtractor) ProjectsExtractor(ctx context.Context) ([]project.Project, error) {
 	mongoCollection := fme.mongoClient.Database("auth").Collection("project")
 	cur, err := mongoCollection.Find(ctx, bson.D{})
 	if err != nil {
@@ -26,10 +28,10 @@ func (fme FullMongoExtractor) ProjectsExtractor(ctx context.Context) ([]mongocol
 	}
 	defer cur.Close(ctx)
 
-	var collections []mongocollection.Project
+	var collections []project.Project
 
 	for cur.Next(ctx) {
-		var collection mongocollection.Project
+		var collection project.Project
 		err := cur.Decode(&collection)
 		if err != nil {
 			return nil, err
@@ -40,7 +42,7 @@ func (fme FullMongoExtractor) ProjectsExtractor(ctx context.Context) ([]mongocol
 	return collections, nil
 }
 
-func (fme FullMongoExtractor) ChaosExperimentsExtractor(ctx context.Context) ([]mongocollection.ChaosExperiment, error) {
+func (fme FullMongoExtractor) ChaosExperimentsExtractor(ctx context.Context) ([]chaos_experiment.ChaosExperimentRequest, error) {
 	mongoCollection := fme.mongoClient.Database("litmus").Collection("chaosExperiments")
 	cur, err := mongoCollection.Find(ctx, bson.D{})
 	if err != nil {
@@ -48,15 +50,11 @@ func (fme FullMongoExtractor) ChaosExperimentsExtractor(ctx context.Context) ([]
 	}
 	defer cur.Close(ctx)
 
-	var collections []mongocollection.ChaosExperiment
+	var collections []chaos_experiment.ChaosExperimentRequest
 
 	for cur.Next(ctx) {
-		var collection mongocollection.ChaosExperiment
+		var collection chaos_experiment.ChaosExperimentRequest
 		err := cur.Decode(&collection)
-		if err != nil {
-			return nil, err
-		}
-		err = collection.ParseExperimentManifests()
 		if err != nil {
 			return nil, err
 		}
@@ -66,7 +64,7 @@ func (fme FullMongoExtractor) ChaosExperimentsExtractor(ctx context.Context) ([]
 	return collections, nil
 }
 
-func (fme FullMongoExtractor) ChaosExperimentsRunsExtractor(ctx context.Context) ([]mongocollection.ChaosExperimentRun, error) {
+func (fme FullMongoExtractor) ChaosExperimentsRunsExtractor(ctx context.Context) ([]chaos_experiment_run.ChaosExperimentRun, error) {
 	mongoCollection := fme.mongoClient.Database("litmus").Collection("chaosExperimentRuns")
 	cur, err := mongoCollection.Find(ctx, bson.D{})
 	if err != nil {
@@ -74,15 +72,11 @@ func (fme FullMongoExtractor) ChaosExperimentsRunsExtractor(ctx context.Context)
 	}
 	defer cur.Close(ctx)
 
-	var collections []mongocollection.ChaosExperimentRun
+	var collections []chaos_experiment_run.ChaosExperimentRun
 
 	for cur.Next(ctx) {
-		var collection mongocollection.ChaosExperimentRun
+		var collection chaos_experiment_run.ChaosExperimentRun
 		err := cur.Decode(&collection)
-		if err != nil {
-			return nil, err
-		}
-		err = collection.ParseExecutionData()
 		if err != nil {
 			return nil, err
 		}

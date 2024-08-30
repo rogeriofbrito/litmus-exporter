@@ -10,7 +10,6 @@ import (
 
 type ChaosExperiment struct {
 	ID          uuid.UUID  `gorm:"column:id;type:uuid;default:uuid_generate_v4();primaryKey"`
-	MongoID     string     `gorm:"column:mongo_id"`
 	Name        string     `gorm:"column:name"`
 	Description string     `gorm:"column:description"`
 	Tags        string     `gorm:"column:tags"`
@@ -152,11 +151,11 @@ type ChaosExperimentRecentExperimentRunDetail struct {
 	ProjectID       string                 `gorm:"column:project_id"`
 	ExperimentRunID string                 `gorm:"column:experiment_run_id"`
 	Phase           string                 `gorm:"column:phase"`
-	NotifyID        string                 `gorm:"column:notify_id"`
+	NotifyID        *string                `gorm:"column:notify_id"`
 	Completed       bool                   `gorm:"column:completed"`
 	RunSequence     int                    `gorm:"column:run_sequence"`
 	Probes          []ChaosExperimentProbe `gorm:"foreignKey:recent_run_details_id"`
-	ResiliencyScore float64                `gorm:"column:resiliency_score"`
+	ResiliencyScore *float64               `gorm:"column:resiliency_score"`
 }
 
 type ChaosExperimentProbe struct {

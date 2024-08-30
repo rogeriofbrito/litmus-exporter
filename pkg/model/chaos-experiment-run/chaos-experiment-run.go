@@ -8,7 +8,6 @@ import (
 
 type ChaosExperimentRun struct {
 	ID        uuid.UUID  `gorm:"column:id;type:uuid;default:uuid_generate_v4();primaryKey"`
-	MongoID   string     `gorm:"column:mongo_id"`
 	ProjectID string     `gorm:"column:project_id"`
 	UpdatedAt *time.Time `gorm:"column:updated_at"`
 	CreatedAt *time.Time `gorm:"column:created_at"`
@@ -24,16 +23,16 @@ type ChaosExperimentRun struct {
 	ExecutionDataStr string                          `gorm:"column:execution_data"`
 	ExecutionData    ChaosExperimentRunExecutionData `gorm:"constraint:OnUpdate:CASCADE,OnDelete:CASCADE;foreignKey:chaos_experiment_run_id"`
 	RevisionID       string                          `gorm:"column:revision_id"`
-	NotifyID         string                          `gorm:"column:notify_id"`
-	ResiliencyScore  float64                         `gorm:"column:resiliency_score"`
+	NotifyID         *string                         `gorm:"column:notify_id"`
+	ResiliencyScore  *float64                        `gorm:"column:resiliency_score"`
 	RunSequence      int                             `gorm:"column:run_sequence"`
 	Completed        bool                            `gorm:"column:completed"`
-	FaultsAwaited    int                             `gorm:"column:faults_awaited"`
-	FaultsFailed     int                             `gorm:"column:faults_failed"`
-	FaultsNa         int                             `gorm:"column:faults_na"`
-	FaultsPassed     int                             `gorm:"column:faults_passed"`
-	FaultsStopped    int                             `gorm:"column:faults_stopped"`
-	TotalFaults      int                             `gorm:"column:total_faults"`
+	FaultsAwaited    *int                            `gorm:"column:faults_awaited"`
+	FaultsFailed     *int                            `gorm:"column:faults_failed"`
+	FaultsNa         *int                            `gorm:"column:faults_na"`
+	FaultsPassed     *int                            `gorm:"column:faults_passed"`
+	FaultsStopped    *int                            `gorm:"column:faults_stopped"`
+	TotalFaults      *int                            `gorm:"column:total_faults"`
 }
 
 type ChaosExperimentRunProbe struct {
