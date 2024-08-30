@@ -111,7 +111,18 @@ func (pc PostgresConnector) SaveProjects(ctx context.Context, projs []project.Pr
 
 	pms := util.SliceMap(projs, func(p project.Project) model_project.Project {
 		return model_project.Project{
-			//TODO
+			UpdatedAt: pc.getTimeFromMiliSecInt64(p.UpdatedAt),
+			CreatedAt: pc.getTimeFromMiliSecInt64(p.CreatedAt),
+			IsRemoved: p.IsRemoved,
+			Name:      p.Name,
+			Members: util.SliceMap(p.Members, func(m *project.Member) model_project.ProjectMembers {
+				return model_project.ProjectMembers{
+					Role:       string(m.Role),
+					Invitation: string(m.Invitation),
+					JoinedAt:   pc.getTimeFromMiliSecInt64(m.JoinedAt),
+				}
+			}),
+			State: p.State,
 		}
 	})
 
