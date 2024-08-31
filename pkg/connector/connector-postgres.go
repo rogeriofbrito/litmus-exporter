@@ -8,6 +8,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/litmuschaos/chaos-operator/api/litmuschaos/v1alpha1"
 	"github.com/litmuschaos/litmus/chaoscenter/graphql/server/pkg/database/mongodb/chaos_experiment"
 	"github.com/litmuschaos/litmus/chaoscenter/graphql/server/pkg/database/mongodb/chaos_experiment_run"
 	"github.com/litmuschaos/litmus/chaoscenter/graphql/server/pkg/database/mongodb/project"
@@ -18,10 +19,10 @@ import (
 	model_chaos_experiment_yaml "github.com/rogeriofbrito/litmus-exporter/pkg/model/chaos-experiment-yaml"
 	model_project "github.com/rogeriofbrito/litmus-exporter/pkg/model/project"
 	"github.com/rogeriofbrito/litmus-exporter/pkg/util"
-	yamlfield "github.com/rogeriofbrito/litmus-exporter/pkg/yaml-field"
-	"gopkg.in/yaml.v2"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
+	corev1 "k8s.io/api/core/v1"
+	rbacV1 "k8s.io/api/rbac/v1"
 )
 
 func NewPostgresConnector() *PostgresConnector {
@@ -391,30 +392,34 @@ func (pc PostgresConnector) getChaosExperimentYamls(em *jsonfield.ExperimentMani
 	for _, t := range em.Spec.Templates {
 		if t.Name == "install-chaos-faults" {
 			for _, a := range t.Inputs.Artifacts {
-				var ce yamlfield.ChaosExperiment
-				err := yaml.Unmarshal([]byte(a.Raw.Data), &ce)
+				ce, err := util.ParseChaosExperimentYaml(a.Raw.Data)
 				if err != nil {
 					panic(err)
 				}
+
 				mces = append(mces, model_chaos_experiment_yaml.ChaosExperimentYaml{
 					APIVersion: ce.APIVersion,
-					Description: model_chaos_experiment_yaml.ChaosExperimentYamlDescription{
-						Message: ce.Description.Message,
-					},
+					/*
+						Description: model_chaos_experiment_yaml.ChaosExperimentYamlDescription{
+							Message: ce.Description.Message,
+						},
+					*/
 					Kind: ce.Kind,
 					Metadata: model_chaos_experiment_yaml.ChaosExperimentYamlMetadata{
-						Name: ce.Metadata.Name,
-						Labels: model_chaos_experiment_yaml.ChaosExperimentYamlLabels{
-							Name:                     ce.Metadata.Labels.Name,
-							AppKubernetesIoPartOf:    ce.Metadata.Labels.AppKubernetesIoPartOf,
-							AppKubernetesIoComponent: ce.Metadata.Labels.AppKubernetesIoComponent,
-							AppKubernetesIoVersion:   ce.Metadata.Labels.AppKubernetesIoVersion,
-						},
+						Name: ce.Name,
+						/*
+							Labels: model_chaos_experiment_yaml.ChaosExperimentYamlLabels{
+								Name:                     ce.GetObjectMeta().GetName(),
+								AppKubernetesIoPartOf:    ce.Metadata.Labels.AppKubernetesIoPartOf,
+								AppKubernetesIoComponent: ce.Metadata.Labels.AppKubernetesIoComponent,
+								AppKubernetesIoVersion:   ce.Metadata.Labels.AppKubernetesIoVersion,
+							},
+						*/
 					},
 					Spec: model_chaos_experiment_yaml.ChaosExperimentYamlSpec{
 						Definition: model_chaos_experiment_yaml.ChaosExperimentYamlDefinition{
 							Scope: ce.Spec.Definition.Scope,
-							Permissions: util.SliceMap(ce.Spec.Definition.Permissions, func(perm yamlfield.Permission) model_chaos_experiment_yaml.ChaosExperimentYamlPermission {
+							Permissions: util.SliceMap(ce.Spec.Definition.Permissions, func(perm rbacV1.PolicyRule) model_chaos_experiment_yaml.ChaosExperimentYamlPermission {
 								return model_chaos_experiment_yaml.ChaosExperimentYamlPermission{
 									APIGroups: strings.Join(perm.APIGroups, ","),
 									Resources: strings.Join(perm.Resources, ","),
@@ -422,22 +427,24 @@ func (pc PostgresConnector) getChaosExperimentYamls(em *jsonfield.ExperimentMani
 								}
 							}),
 							Image:           ce.Spec.Definition.Image,
-							ImagePullPolicy: ce.Spec.Definition.ImagePullPolicy,
+							ImagePullPolicy: string(ce.Spec.Definition.ImagePullPolicy),
 							Args:            strings.Join(ce.Spec.Definition.Args, ","),
 							Command:         strings.Join(ce.Spec.Definition.Command, ","),
-							Env: util.SliceMap(ce.Spec.Definition.Env, func(env yamlfield.ChaosExperimentEnv) model_chaos_experiment_yaml.ChaosExperimentYamlEnv {
+							Env: util.SliceMap(ce.Spec.Definition.ENVList, func(env corev1.EnvVar) model_chaos_experiment_yaml.ChaosExperimentYamlEnv {
 								return model_chaos_experiment_yaml.ChaosExperimentYamlEnv{
 									Name:  env.Name,
 									Value: env.Value,
 								}
 							}),
-							Labels: model_chaos_experiment_yaml.ChaosExperimentYamlDefinitionLabels{
-								Name:                           ce.Spec.Definition.Labels.Name,
-								AppKubernetesIoPartOf:          ce.Spec.Definition.Labels.AppKubernetesIoPartOf,
-								AppKubernetesIoComponent:       ce.Spec.Definition.Labels.AppKubernetesIoComponent,
-								AppKubernetesIoRuntimeAPIUsage: ce.Spec.Definition.Labels.AppKubernetesIoRuntimeAPIUsage,
-								AppKubernetesIoVersion:         ce.Spec.Definition.Labels.AppKubernetesIoVersion,
-							},
+							/*
+								Labels: model_chaos_experiment_yaml.ChaosExperimentYamlDefinitionLabels{
+									Name:                           ce.Spec.Definition.Labels.Name,
+									AppKubernetesIoPartOf:          ce.Spec.Definition.Labels.AppKubernetesIoPartOf,
+									AppKubernetesIoComponent:       ce.Spec.Definition.Labels.AppKubernetesIoComponent,
+									AppKubernetesIoRuntimeAPIUsage: ce.Spec.Definition.Labels.AppKubernetesIoRuntimeAPIUsage,
+									AppKubernetesIoVersion:         ce.Spec.Definition.Labels.AppKubernetesIoVersion,
+								},
+							*/
 						},
 					},
 				})
@@ -452,39 +459,43 @@ func (pc PostgresConnector) getChaosEngineYamls(em *jsonfield.ExperimentManifest
 	for _, t := range em.Spec.Templates {
 		if strings.Contains(t.Container.Image, "litmus-checker") {
 			for _, a := range t.Inputs.Artifacts {
-				var ce yamlfield.ChaosEngine
-				err := yaml.Unmarshal([]byte(a.Raw.Data), &ce)
+				ce, err := util.ParseChaosEngineYaml(a.Raw.Data)
 				if err != nil {
 					panic(err)
 				}
+
 				mces = append(mces, model_chaos_engine_yaml.ChaosEngineYaml{
 					APIVersion: ce.APIVersion,
 					Kind:       ce.Kind,
 					Metadata: model_chaos_engine_yaml.ChaosEngineYamlMetadata{
-						Namespace: ce.Metadata.Namespace,
-						Labels: model_chaos_engine_yaml.ChaosEngineYamlLabels{
-							WorkflowRunID: ce.Metadata.Labels.WorkflowRunID,
-							WorkflowName:  ce.Metadata.Labels.WorkflowName,
-						},
-						Annotations: model_chaos_engine_yaml.ChaosEngineYamlAnnotations{
-							ProbeRef: ce.Metadata.Annotations.ProbeRef,
-						},
-						GenerateName: ce.Metadata.GenerateName,
+						Namespace: ce.Namespace,
+						/*
+							Labels: model_chaos_engine_yaml.ChaosEngineYamlLabels{
+								WorkflowRunID: ce.Metadata.Labels.WorkflowRunID,
+								WorkflowName:  ce.Metadata.Labels.WorkflowName,
+							},
+						*/
+						/*
+							Annotations: model_chaos_engine_yaml.ChaosEngineYamlAnnotations{
+								ProbeRef: ce.Metadata.Annotations.ProbeRef,
+							},
+						*/
+						//GenerateName: ce.Metadata.GenerateName,
 					},
 					Spec: model_chaos_engine_yaml.ChaosEngineYamlSpec{
-						EngineState: ce.Spec.EngineState,
+						EngineState: string(ce.Spec.EngineState),
 						Appinfo: model_chaos_engine_yaml.ChaosEngineYamlAppInfo{
 							Appns:    ce.Spec.Appinfo.Appns,
 							Applabel: ce.Spec.Appinfo.Applabel,
-							Appkind:  ce.Spec.Appinfo.Appkind,
+							Appkind:  ce.Spec.Appinfo.AppKind,
 						},
 						ChaosServiceAccount: ce.Spec.ChaosServiceAccount,
-						Experiments: util.SliceMap(ce.Spec.Experiments, func(exp yamlfield.ChaosEngineExperiment) model_chaos_engine_yaml.ChaosEngineYamlExperiment {
+						Experiments: util.SliceMap(ce.Spec.Experiments, func(exp v1alpha1.ExperimentList) model_chaos_engine_yaml.ChaosEngineYamlExperiment {
 							return model_chaos_engine_yaml.ChaosEngineYamlExperiment{
 								Name: exp.Name,
 								Spec: model_chaos_engine_yaml.ChaosEngineYamlExperimentSpec{
 									Components: model_chaos_engine_yaml.ChaosEngineYamlCompoments{
-										Env: util.SliceMap(exp.Spec.Components.Env, func(env yamlfield.ChaosEngineEnv) model_chaos_engine_yaml.ChaosEngineYamlEnv {
+										Env: util.SliceMap(exp.Spec.Components.ENV, func(env corev1.EnvVar) model_chaos_engine_yaml.ChaosEngineYamlEnv {
 											return model_chaos_engine_yaml.ChaosEngineYamlEnv{
 												Name:  env.Name,
 												Value: env.Value,
