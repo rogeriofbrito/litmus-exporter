@@ -7,12 +7,12 @@ import (
 	litmus_chaos_experiment_run "github.com/litmuschaos/litmus/chaoscenter/graphql/server/pkg/chaos_experiment_run"
 	mongodb_chaos_experiment "github.com/litmuschaos/litmus/chaoscenter/graphql/server/pkg/database/mongodb/chaos_experiment"
 	mongodb_chaos_experiment_run "github.com/litmuschaos/litmus/chaoscenter/graphql/server/pkg/database/mongodb/chaos_experiment_run"
-	argoworkflowstypes "github.com/rogeriofbrito/litmus-exporter/pkg/argo-workflows-types"
+	typesargoworkflows "github.com/rogeriofbrito/litmus-exporter/pkg/types/argo-workflows"
 	"gopkg.in/yaml.v3"
 )
 
-func ParseExperimentManifests(rev mongodb_chaos_experiment.ExperimentRevision) (*argoworkflowstypes.Workflow, error) {
-	w := &argoworkflowstypes.Workflow{}
+func ParseExperimentManifests(rev mongodb_chaos_experiment.ExperimentRevision) (*typesargoworkflows.Workflow, error) {
+	w := &typesargoworkflows.Workflow{}
 	if err := json.Unmarshal([]byte(rev.ExperimentManifest), w); err != nil {
 		return nil, err
 	}

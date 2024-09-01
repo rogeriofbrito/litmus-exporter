@@ -13,12 +13,12 @@ import (
 	"github.com/litmuschaos/litmus/chaoscenter/graphql/server/pkg/database/mongodb/chaos_experiment"     //TODO: rename import
 	"github.com/litmuschaos/litmus/chaoscenter/graphql/server/pkg/database/mongodb/chaos_experiment_run" //TODO: rename import
 	"github.com/litmuschaos/litmus/chaoscenter/graphql/server/pkg/database/mongodb/project"              //TODO: rename import
-	argoworkflowstypes "github.com/rogeriofbrito/litmus-exporter/pkg/argo-workflows-types"
 	model_chaos_engine_yaml "github.com/rogeriofbrito/litmus-exporter/pkg/model/chaos-engine-yaml"
 	model_chaos_experiment "github.com/rogeriofbrito/litmus-exporter/pkg/model/chaos-experiment"
 	model_chaos_experiment_run "github.com/rogeriofbrito/litmus-exporter/pkg/model/chaos-experiment-run"
 	model_chaos_experiment_yaml "github.com/rogeriofbrito/litmus-exporter/pkg/model/chaos-experiment-yaml"
 	model_project "github.com/rogeriofbrito/litmus-exporter/pkg/model/project"
+	typesargoworkflows "github.com/rogeriofbrito/litmus-exporter/pkg/types/argo-workflows"
 	"github.com/rogeriofbrito/litmus-exporter/pkg/util"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
@@ -179,17 +179,17 @@ func (pc PostgresConnector) SaveChaosExperiments(ctx context.Context, ces []chao
 							},
 						},
 						Spec: model_chaos_experiment.ChaosExperimentSpec{
-							Templates: util.SliceMap(w.Spec.Templates, func(temp argoworkflowstypes.Template) model_chaos_experiment.ChaosExperimentTemplate {
+							Templates: util.SliceMap(w.Spec.Templates, func(temp typesargoworkflows.Template) model_chaos_experiment.ChaosExperimentTemplate {
 								return model_chaos_experiment.ChaosExperimentTemplate{
 									Name: temp.Name,
 									Steps: model_chaos_experiment.ChaosExperimentSteps{
-										Name: func(steps argoworkflowstypes.Steps) string {
+										Name: func(steps typesargoworkflows.Steps) string {
 											if len(steps) == 0 {
 												return ""
 											}
 											return steps[0][0].Name
 										}(temp.Steps),
-										Template: func(steps argoworkflowstypes.Steps) string {
+										Template: func(steps typesargoworkflows.Steps) string {
 											if len(steps) == 0 {
 												return ""
 											}
@@ -206,7 +206,7 @@ func (pc PostgresConnector) SaveChaosExperiments(ctx context.Context, ces []chao
 							}),
 							Entrypoint: w.Spec.Entrypoint,
 							Arguments: model_chaos_experiment.ChaosExperimentArguments{
-								Parameters: util.SliceMap(w.Spec.Arguments.Parameters, func(param argoworkflowstypes.Parameter) model_chaos_experiment.ChaosExperimentParameter {
+								Parameters: util.SliceMap(w.Spec.Arguments.Parameters, func(param typesargoworkflows.Parameter) model_chaos_experiment.ChaosExperimentParameter {
 									return model_chaos_experiment.ChaosExperimentParameter{
 										Name:  param.Name,
 										Value: param.Value,
@@ -375,7 +375,7 @@ func (pc PostgresConnector) getTimeFromSecString(ts string) *time.Time {
 	return &time
 }
 
-func (pc PostgresConnector) getChaosExperimentYamls(w *argoworkflowstypes.Workflow) []model_chaos_experiment_yaml.ChaosExperimentYaml {
+func (pc PostgresConnector) getChaosExperimentYamls(w *typesargoworkflows.Workflow) []model_chaos_experiment_yaml.ChaosExperimentYaml {
 	var mces []model_chaos_experiment_yaml.ChaosExperimentYaml
 	for _, t := range w.Spec.Templates {
 		if t.Name == "install-chaos-faults" {
@@ -432,7 +432,7 @@ func (pc PostgresConnector) getChaosExperimentYamls(w *argoworkflowstypes.Workfl
 	return mces
 }
 
-func (pc PostgresConnector) getChaosEngineYamls(w *argoworkflowstypes.Workflow) []model_chaos_engine_yaml.ChaosEngineYaml {
+func (pc PostgresConnector) getChaosEngineYamls(w *typesargoworkflows.Workflow) []model_chaos_engine_yaml.ChaosEngineYaml {
 	var mces []model_chaos_engine_yaml.ChaosEngineYaml
 	for _, t := range w.Spec.Templates {
 		if strings.Contains(t.Container.Image, "litmus-checker") {
