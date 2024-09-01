@@ -1,11 +1,11 @@
-package model_chaos_experiment
+package typespostgreschaosexperiment
 
 import (
 	"time"
 
 	"github.com/google/uuid"
-	model_chaos_engine_yaml "github.com/rogeriofbrito/litmus-exporter/pkg/model/chaos-engine-yaml"
-	model_chaos_experiment_yaml "github.com/rogeriofbrito/litmus-exporter/pkg/model/chaos-experiment-yaml"
+	model_chaos_engine_yaml "github.com/rogeriofbrito/litmus-exporter/pkg/types/postgres/chaos-engine-yaml"
+	model_chaos_experiment_yaml "github.com/rogeriofbrito/litmus-exporter/pkg/types/postgres/chaos-experiment-yaml"
 )
 
 type ChaosExperiment struct {

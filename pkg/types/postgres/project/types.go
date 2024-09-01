@@ -1,4 +1,4 @@
-package model_project
+package typespostgresproject
 
 import (
 	"time"

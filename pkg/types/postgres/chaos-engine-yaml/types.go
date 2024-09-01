@@ -1,4 +1,4 @@
-package model_chaos_engine_yaml
+package typespostgreschaosengineyaml
 
 import "github.com/google/uuid"
 

@@ -13,12 +13,12 @@ import (
 	"github.com/litmuschaos/litmus/chaoscenter/graphql/server/pkg/database/mongodb/chaos_experiment"     //TODO: rename import
 	"github.com/litmuschaos/litmus/chaoscenter/graphql/server/pkg/database/mongodb/chaos_experiment_run" //TODO: rename import
 	"github.com/litmuschaos/litmus/chaoscenter/graphql/server/pkg/database/mongodb/project"              //TODO: rename import
-	model_chaos_engine_yaml "github.com/rogeriofbrito/litmus-exporter/pkg/model/chaos-engine-yaml"
-	model_chaos_experiment "github.com/rogeriofbrito/litmus-exporter/pkg/model/chaos-experiment"
-	model_chaos_experiment_run "github.com/rogeriofbrito/litmus-exporter/pkg/model/chaos-experiment-run"
-	model_chaos_experiment_yaml "github.com/rogeriofbrito/litmus-exporter/pkg/model/chaos-experiment-yaml"
-	model_project "github.com/rogeriofbrito/litmus-exporter/pkg/model/project"
 	typesargoworkflows "github.com/rogeriofbrito/litmus-exporter/pkg/types/argo-workflows"
+	typespostgreschaosengineyaml "github.com/rogeriofbrito/litmus-exporter/pkg/types/postgres/chaos-engine-yaml"
+	typespostgreschaosexperiment "github.com/rogeriofbrito/litmus-exporter/pkg/types/postgres/chaos-experiment"
+	typespostgreschaosexperimentrun "github.com/rogeriofbrito/litmus-exporter/pkg/types/postgres/chaos-experiment-run"
+	typespostgreschaosexperimentyaml "github.com/rogeriofbrito/litmus-exporter/pkg/types/postgres/chaos-experiment-yaml"
+	typespostgresproject "github.com/rogeriofbrito/litmus-exporter/pkg/types/postgres/project"
 	"github.com/rogeriofbrito/litmus-exporter/pkg/util"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
@@ -40,62 +40,62 @@ func (pc PostgresConnector) Init(ctx context.Context) error {
 
 	err = db.AutoMigrate(
 		//Project
-		&model_project.Project{},
-		&model_project.ProjectMembers{},
+		&typespostgresproject.Project{},
+		&typespostgresproject.ProjectMembers{},
 		//ChaosExperiment
-		&model_chaos_experiment.ChaosExperiment{},
-		&model_chaos_experiment.User{},
-		&model_chaos_experiment.ChaosExperimentRevision{},
-		&model_chaos_experiment.ChaosExperimentManifest{},
-		&model_chaos_experiment.ChaosExperimentMetadata{},
-		&model_chaos_experiment.ChaosExperimentLabels{},
-		&model_chaos_experiment.ChaosExperimentSpec{},
-		&model_chaos_experiment.ChaosExperimentTemplate{},
-		&model_chaos_experiment.ChaosExperimentSteps{},
-		&model_chaos_experiment.ChaosExperimentContainer{},
-		&model_chaos_experiment.ChaosExperimentArguments{},
-		&model_chaos_experiment.ChaosExperimentParameter{},
-		&model_chaos_experiment.ChaosExperimentPodGC{},
-		&model_chaos_experiment.ChaosExperimentSecurityContext{},
-		&model_chaos_experiment.ChaosExperimentStatus{},
-		&model_chaos_experiment.ChaosExperimentRecentExperimentRunDetail{},
-		&model_chaos_experiment.ChaosExperimentProbe{},
+		&typespostgreschaosexperiment.ChaosExperiment{},
+		&typespostgreschaosexperiment.User{},
+		&typespostgreschaosexperiment.ChaosExperimentRevision{},
+		&typespostgreschaosexperiment.ChaosExperimentManifest{},
+		&typespostgreschaosexperiment.ChaosExperimentMetadata{},
+		&typespostgreschaosexperiment.ChaosExperimentLabels{},
+		&typespostgreschaosexperiment.ChaosExperimentSpec{},
+		&typespostgreschaosexperiment.ChaosExperimentTemplate{},
+		&typespostgreschaosexperiment.ChaosExperimentSteps{},
+		&typespostgreschaosexperiment.ChaosExperimentContainer{},
+		&typespostgreschaosexperiment.ChaosExperimentArguments{},
+		&typespostgreschaosexperiment.ChaosExperimentParameter{},
+		&typespostgreschaosexperiment.ChaosExperimentPodGC{},
+		&typespostgreschaosexperiment.ChaosExperimentSecurityContext{},
+		&typespostgreschaosexperiment.ChaosExperimentStatus{},
+		&typespostgreschaosexperiment.ChaosExperimentRecentExperimentRunDetail{},
+		&typespostgreschaosexperiment.ChaosExperimentProbe{},
 		//ChaosExperimentYaml
-		&model_chaos_experiment_yaml.ChaosExperimentYaml{},
-		&model_chaos_experiment_yaml.ChaosExperimentYamlMetadata{},
-		&model_chaos_experiment_yaml.ChaosExperimentYamlLabels{},
-		&model_chaos_experiment_yaml.ChaosExperimentYamlSpec{},
-		&model_chaos_experiment_yaml.ChaosExperimentYamlDefinition{},
-		&model_chaos_experiment_yaml.ChaosExperimentYamlPermission{},
-		&model_chaos_experiment_yaml.ChaosExperimentYamlEnv{},
-		&model_chaos_experiment_yaml.ChaosExperimentYamlDefinitionLabels{},
+		&typespostgreschaosexperimentyaml.ChaosExperimentYaml{},
+		&typespostgreschaosexperimentyaml.ChaosExperimentYamlMetadata{},
+		&typespostgreschaosexperimentyaml.ChaosExperimentYamlLabels{},
+		&typespostgreschaosexperimentyaml.ChaosExperimentYamlSpec{},
+		&typespostgreschaosexperimentyaml.ChaosExperimentYamlDefinition{},
+		&typespostgreschaosexperimentyaml.ChaosExperimentYamlPermission{},
+		&typespostgreschaosexperimentyaml.ChaosExperimentYamlEnv{},
+		&typespostgreschaosexperimentyaml.ChaosExperimentYamlDefinitionLabels{},
 		//ChaosEngineYaml
-		&model_chaos_engine_yaml.ChaosEngineYaml{},
-		&model_chaos_engine_yaml.ChaosEngineYamlMetadata{},
-		&model_chaos_engine_yaml.ChaosEngineYamlSpec{},
-		&model_chaos_engine_yaml.ChaosEngineYamlLabels{},
-		&model_chaos_engine_yaml.ChaosEngineYamlAnnotations{},
-		&model_chaos_engine_yaml.ChaosEngineYamlAppInfo{},
-		&model_chaos_engine_yaml.ChaosEngineYamlExperiment{},
-		&model_chaos_engine_yaml.ChaosEngineYamlExperimentSpec{},
-		&model_chaos_engine_yaml.ChaosEngineYamlCompoments{},
-		&model_chaos_engine_yaml.ChaosEngineYamlEnv{},
+		&typespostgreschaosengineyaml.ChaosEngineYaml{},
+		&typespostgreschaosengineyaml.ChaosEngineYamlMetadata{},
+		&typespostgreschaosengineyaml.ChaosEngineYamlSpec{},
+		&typespostgreschaosengineyaml.ChaosEngineYamlLabels{},
+		&typespostgreschaosengineyaml.ChaosEngineYamlAnnotations{},
+		&typespostgreschaosengineyaml.ChaosEngineYamlAppInfo{},
+		&typespostgreschaosengineyaml.ChaosEngineYamlExperiment{},
+		&typespostgreschaosengineyaml.ChaosEngineYamlExperimentSpec{},
+		&typespostgreschaosengineyaml.ChaosEngineYamlCompoments{},
+		&typespostgreschaosengineyaml.ChaosEngineYamlEnv{},
 		//ChaosExperimentRun
-		&model_chaos_experiment_run.ChaosExperimentRun{},
-		&model_chaos_experiment_run.ChaosExperimentRunProbe{},
-		&model_chaos_experiment_run.ChaosExperimentRunExecutionData{},
-		&model_chaos_experiment_run.ChaosExperimentRunNode{},
-		&model_chaos_experiment_run.ChaosExperimentRunChaosData{},
-		&model_chaos_experiment_run.ChaosExperimentRunChaosResult{},
-		&model_chaos_experiment_run.ChaosExperimentRunMetadata{},
-		&model_chaos_experiment_run.ChaosExperimentRunSpec{},
-		&model_chaos_experiment_run.ChaosExperimentRunStatus{},
-		&model_chaos_experiment_run.ChaosExperimentRunLabels{},
-		&model_chaos_experiment_run.ChaosExperimentRunExperimentStatus{},
-		&model_chaos_experiment_run.ChaosExperimentRunProbeStatus{},
-		&model_chaos_experiment_run.ChaosExperimentRunHistory{},
-		&model_chaos_experiment_run.ChaosExperimentRunProbeStatusesStatus{},
-		&model_chaos_experiment_run.ChaosExperimentRunHistoryTarget{},
+		&typespostgreschaosexperimentrun.ChaosExperimentRun{},
+		&typespostgreschaosexperimentrun.ChaosExperimentRunProbe{},
+		&typespostgreschaosexperimentrun.ChaosExperimentRunExecutionData{},
+		&typespostgreschaosexperimentrun.ChaosExperimentRunNode{},
+		&typespostgreschaosexperimentrun.ChaosExperimentRunChaosData{},
+		&typespostgreschaosexperimentrun.ChaosExperimentRunChaosResult{},
+		&typespostgreschaosexperimentrun.ChaosExperimentRunMetadata{},
+		&typespostgreschaosexperimentrun.ChaosExperimentRunSpec{},
+		&typespostgreschaosexperimentrun.ChaosExperimentRunStatus{},
+		&typespostgreschaosexperimentrun.ChaosExperimentRunLabels{},
+		&typespostgreschaosexperimentrun.ChaosExperimentRunExperimentStatus{},
+		&typespostgreschaosexperimentrun.ChaosExperimentRunProbeStatus{},
+		&typespostgreschaosexperimentrun.ChaosExperimentRunHistory{},
+		&typespostgreschaosexperimentrun.ChaosExperimentRunProbeStatusesStatus{},
+		&typespostgreschaosexperimentrun.ChaosExperimentRunHistoryTarget{},
 	)
 	if err != nil {
 		return err
@@ -110,14 +110,14 @@ func (pc PostgresConnector) SaveProjects(ctx context.Context, projs []project.Pr
 		return err
 	}
 
-	pms := util.SliceMap(projs, func(p project.Project) model_project.Project {
-		return model_project.Project{
+	pms := util.SliceMap(projs, func(p project.Project) typespostgresproject.Project {
+		return typespostgresproject.Project{
 			UpdatedAt: pc.getTimeFromMiliSecInt64(p.UpdatedAt),
 			CreatedAt: pc.getTimeFromMiliSecInt64(p.CreatedAt),
 			IsRemoved: p.IsRemoved,
 			Name:      p.Name,
-			Members: util.SliceMap(p.Members, func(m *project.Member) model_project.ProjectMembers {
-				return model_project.ProjectMembers{
+			Members: util.SliceMap(p.Members, func(m *project.Member) typespostgresproject.ProjectMembers {
+				return typespostgresproject.ProjectMembers{
 					Role:       string(m.Role),
 					Invitation: string(m.Invitation),
 					JoinedAt:   pc.getTimeFromMiliSecInt64(m.JoinedAt),
@@ -140,14 +140,14 @@ func (pc PostgresConnector) SaveChaosExperiments(ctx context.Context, ces []chao
 		return err
 	}
 
-	cems := util.SliceMap(ces, func(ce chaos_experiment.ChaosExperimentRequest) model_chaos_experiment.ChaosExperiment {
-		return model_chaos_experiment.ChaosExperiment{
+	cems := util.SliceMap(ces, func(ce chaos_experiment.ChaosExperimentRequest) typespostgreschaosexperiment.ChaosExperiment {
+		return typespostgreschaosexperiment.ChaosExperiment{
 			Name:        ce.Name,
 			Description: ce.Description,
 			Tags:        strings.Join(ce.Tags, ","),
 			UpdatedAt:   pc.getTimeFromMiliSecInt64(ce.UpdatedAt),
 			CreatedAt:   pc.getTimeFromMiliSecInt64(ce.CreatedAt),
-			/*UpdatedBy: model_chaos_experiment.User{
+			/*UpdatedBy: typespostgreschaosexperiment.User{
 				UserID:   ce.UpdatedBy.UserID,
 				UserName: ce.UpdatedBy.UserName,
 				Email:    ce.UpdatedBy.Email,
@@ -158,31 +158,31 @@ func (pc PostgresConnector) SaveChaosExperiments(ctx context.Context, ces []chao
 			CronSyntax:     ce.CronSyntax,
 			InfraID:        ce.InfraID,
 			ExperimentType: string(ce.ExperimentType),
-			Revision: util.SliceMap(ce.Revision, func(rev chaos_experiment.ExperimentRevision) model_chaos_experiment.ChaosExperimentRevision {
+			Revision: util.SliceMap(ce.Revision, func(rev chaos_experiment.ExperimentRevision) typespostgreschaosexperiment.ChaosExperimentRevision {
 				w, err := util.ParseExperimentManifests(rev)
 				if err != nil {
 					panic(err)
 				}
-				return model_chaos_experiment.ChaosExperimentRevision{
+				return typespostgreschaosexperiment.ChaosExperimentRevision{
 					RevisionID: rev.RevisionID,
-					ExperimentManifest: model_chaos_experiment.ChaosExperimentManifest{
+					ExperimentManifest: typespostgreschaosexperiment.ChaosExperimentManifest{
 						Kind:       w.Kind,
 						APIVersion: w.APIVersion,
-						Metadata: model_chaos_experiment.ChaosExperimentMetadata{
+						Metadata: typespostgreschaosexperiment.ChaosExperimentMetadata{
 							Name:              w.ObjectMeta.Name,
 							CreationTimestamp: &w.ObjectMeta.CreationTimestamp.Time,
-							Labels: model_chaos_experiment.ChaosExperimentLabels{
+							Labels: typespostgreschaosexperiment.ChaosExperimentLabels{
 								InfraID:              w.ObjectMeta.Labels["infra_id"],
 								RevisionID:           w.ObjectMeta.Labels["revision_id"],
 								WorkflowID:           w.ObjectMeta.Labels["workflow_id"],
 								ControllerInstanceID: w.ObjectMeta.Labels["controller_instance_id"],
 							},
 						},
-						Spec: model_chaos_experiment.ChaosExperimentSpec{
-							Templates: util.SliceMap(w.Spec.Templates, func(temp typesargoworkflows.Template) model_chaos_experiment.ChaosExperimentTemplate {
-								return model_chaos_experiment.ChaosExperimentTemplate{
+						Spec: typespostgreschaosexperiment.ChaosExperimentSpec{
+							Templates: util.SliceMap(w.Spec.Templates, func(temp typesargoworkflows.Template) typespostgreschaosexperiment.ChaosExperimentTemplate {
+								return typespostgreschaosexperiment.ChaosExperimentTemplate{
 									Name: temp.Name,
-									Steps: model_chaos_experiment.ChaosExperimentSteps{
+									Steps: typespostgreschaosexperiment.ChaosExperimentSteps{
 										Name: func(steps typesargoworkflows.Steps) string {
 											if len(steps) == 0 {
 												return ""
@@ -196,7 +196,7 @@ func (pc PostgresConnector) SaveChaosExperiments(ctx context.Context, ces []chao
 											return steps[0][0].Template
 										}(temp.Steps),
 									},
-									Container: model_chaos_experiment.ChaosExperimentContainer{
+									Container: typespostgreschaosexperiment.ChaosExperimentContainer{
 										Name:    temp.Container.Name,
 										Image:   temp.Container.Image,
 										Command: strings.Join(temp.Container.Command, ","),
@@ -205,24 +205,24 @@ func (pc PostgresConnector) SaveChaosExperiments(ctx context.Context, ces []chao
 								}
 							}),
 							Entrypoint: w.Spec.Entrypoint,
-							Arguments: model_chaos_experiment.ChaosExperimentArguments{
-								Parameters: util.SliceMap(w.Spec.Arguments.Parameters, func(param typesargoworkflows.Parameter) model_chaos_experiment.ChaosExperimentParameter {
-									return model_chaos_experiment.ChaosExperimentParameter{
+							Arguments: typespostgreschaosexperiment.ChaosExperimentArguments{
+								Parameters: util.SliceMap(w.Spec.Arguments.Parameters, func(param typesargoworkflows.Parameter) typespostgreschaosexperiment.ChaosExperimentParameter {
+									return typespostgreschaosexperiment.ChaosExperimentParameter{
 										Name:  param.Name,
 										Value: param.Value,
 									}
 								}),
 							},
 							ServiceAccountName: w.Spec.ServiceAccountName,
-							PodGC: model_chaos_experiment.ChaosExperimentPodGC{
+							PodGC: typespostgreschaosexperiment.ChaosExperimentPodGC{
 								Strategy: w.Spec.PodGC.Strategy,
 							},
-							SecurityContext: model_chaos_experiment.ChaosExperimentSecurityContext{
+							SecurityContext: typespostgreschaosexperiment.ChaosExperimentSecurityContext{
 								RunAsUser:    w.Spec.SecurityContext.RunAsUser,
 								RunAsNonRoot: w.Spec.SecurityContext.RunAsNonRoot,
 							},
 						},
-						Status: model_chaos_experiment.ChaosExperimentStatus{
+						Status: typespostgreschaosexperiment.ChaosExperimentStatus{
 							StartedAt:  pc.getTimeFromMiliSecInt64(w.Status.StartedAt),
 							FinishedAt: pc.getTimeFromMiliSecInt64(w.Status.FinishedAt),
 						},
@@ -232,16 +232,16 @@ func (pc PostgresConnector) SaveChaosExperiments(ctx context.Context, ces []chao
 				}
 			}),
 			IsCustomExperiment: ce.IsCustomExperiment,
-			RecentExperimentRunDetails: util.SliceMap(ce.RecentExperimentRunDetails, func(detail chaos_experiment.ExperimentRunDetail) model_chaos_experiment.ChaosExperimentRecentExperimentRunDetail {
-				return model_chaos_experiment.ChaosExperimentRecentExperimentRunDetail{
+			RecentExperimentRunDetails: util.SliceMap(ce.RecentExperimentRunDetails, func(detail chaos_experiment.ExperimentRunDetail) typespostgreschaosexperiment.ChaosExperimentRecentExperimentRunDetail {
+				return typespostgreschaosexperiment.ChaosExperimentRecentExperimentRunDetail{
 					UpdatedAt: pc.getTimeFromMiliSecInt64(detail.UpdatedAt),
 					CreatedAt: pc.getTimeFromMiliSecInt64(detail.CreatedAt),
-					/*CreatedBy: model_chaos_experiment.User{
+					/*CreatedBy: typespostgreschaosexperiment.User{
 						UserID:   ci.CreatedBy.UserID,
 						UserName: ci.CreatedBy.UserName,
 						Email:    ci.CreatedBy.Email,
 					},
-					UpdatedBy: model_chaos_experiment.User{
+					UpdatedBy: typespostgreschaosexperiment.User{
 						UserID:   ci.UpdatedBy.UserID,
 						UserName: ci.UpdatedBy.UserName,
 						Email:    ci.UpdatedBy.Email,
@@ -253,8 +253,8 @@ func (pc PostgresConnector) SaveChaosExperiments(ctx context.Context, ces []chao
 					NotifyID:        detail.NotifyID,
 					Completed:       detail.Completed,
 					RunSequence:     detail.RunSequence,
-					Probes: util.SliceMap(detail.Probe, func(probe chaos_experiment.Probes) model_chaos_experiment.ChaosExperimentProbe {
-						return model_chaos_experiment.ChaosExperimentProbe{
+					Probes: util.SliceMap(detail.Probe, func(probe chaos_experiment.Probes) typespostgreschaosexperiment.ChaosExperimentProbe {
+						return typespostgreschaosexperiment.ChaosExperimentProbe{
 							FaultName:  probe.FaultName,
 							ProbeNames: strings.Join(probe.ProbeNames, ","),
 						}
@@ -279,22 +279,22 @@ func (pc PostgresConnector) SaveChaosExperimentRuns(ctx context.Context, cers []
 		return err
 	}
 
-	cerms := util.SliceMap(cers, func(cer chaos_experiment_run.ChaosExperimentRun) model_chaos_experiment_run.ChaosExperimentRun {
+	cerms := util.SliceMap(cers, func(cer chaos_experiment_run.ChaosExperimentRun) typespostgreschaosexperimentrun.ChaosExperimentRun {
 		ed, err := util.ParseExecutionData(cer)
 		if err != nil {
 			panic(err)
 		}
 
-		return model_chaos_experiment_run.ChaosExperimentRun{
+		return typespostgreschaosexperimentrun.ChaosExperimentRun{
 			ProjectID: cer.ProjectID,
 			UpdatedAt: pc.getTimeFromMiliSecInt64(cer.UpdatedAt),
 			CreatedAt: pc.getTimeFromMiliSecInt64(cer.CreatedAt),
-			/*CreatedBy: model_chaos_experiment.User{
+			/*CreatedBy: typespostgreschaosexperiment.User{
 				UserID:   ci.CreatedBy.UserID,
 				UserName: ci.CreatedBy.UserName,
 				Email:    ci.CreatedBy.Email,
 			},
-			UpdatedBy: model_chaos_experiment.User{
+			UpdatedBy: typespostgreschaosexperiment.User{
 				UserID:   ci.UpdatedBy.UserID,
 				UserName: ci.UpdatedBy.UserName,
 				Email:    ci.UpdatedBy.Email,
@@ -305,13 +305,13 @@ func (pc PostgresConnector) SaveChaosExperimentRuns(ctx context.Context, cers []
 			ExperimentID:    cer.ExperimentID,
 			ExperimentName:  cer.ExperimentName,
 			Phase:           cer.Phase,
-			Probes: util.SliceMap(cer.Probes, func(probe chaos_experiment_run.Probes) model_chaos_experiment_run.ChaosExperimentRunProbe {
-				return model_chaos_experiment_run.ChaosExperimentRunProbe{
+			Probes: util.SliceMap(cer.Probes, func(probe chaos_experiment_run.Probes) typespostgreschaosexperimentrun.ChaosExperimentRunProbe {
+				return typespostgreschaosexperimentrun.ChaosExperimentRunProbe{
 					FaultName:  probe.FaultName,
 					ProbeNames: strings.Join(probe.ProbeNames, ","),
 				}
 			}),
-			ExecutionData: model_chaos_experiment_run.ChaosExperimentRunExecutionData{
+			ExecutionData: typespostgreschaosexperimentrun.ChaosExperimentRunExecutionData{
 				ExperimentType:    ed.ExperimentType,
 				RevisionID:        ed.RevisionID,
 				ExperimentID:      ed.ExperimentID,
@@ -375,8 +375,8 @@ func (pc PostgresConnector) getTimeFromSecString(ts string) *time.Time {
 	return &time
 }
 
-func (pc PostgresConnector) getChaosExperimentYamls(w *typesargoworkflows.Workflow) []model_chaos_experiment_yaml.ChaosExperimentYaml {
-	var mces []model_chaos_experiment_yaml.ChaosExperimentYaml
+func (pc PostgresConnector) getChaosExperimentYamls(w *typesargoworkflows.Workflow) []typespostgreschaosexperimentyaml.ChaosExperimentYaml {
+	var mces []typespostgreschaosexperimentyaml.ChaosExperimentYaml
 	for _, t := range w.Spec.Templates {
 		if t.Name == "install-chaos-faults" {
 			for _, a := range t.Inputs.Artifacts {
@@ -385,22 +385,22 @@ func (pc PostgresConnector) getChaosExperimentYamls(w *typesargoworkflows.Workfl
 					panic(err)
 				}
 
-				mces = append(mces, model_chaos_experiment_yaml.ChaosExperimentYaml{
+				mces = append(mces, typespostgreschaosexperimentyaml.ChaosExperimentYaml{
 					APIVersion: ce.APIVersion,
 					Kind:       ce.Kind,
-					Metadata: model_chaos_experiment_yaml.ChaosExperimentYamlMetadata{
+					Metadata: typespostgreschaosexperimentyaml.ChaosExperimentYamlMetadata{
 						Name: ce.Name,
-						Labels: model_chaos_experiment_yaml.ChaosExperimentYamlLabels{
+						Labels: typespostgreschaosexperimentyaml.ChaosExperimentYamlLabels{
 							AppKubernetesIoPartOf:    ce.ObjectMeta.Labels["app.kubernetes.io/part-of"],
 							AppKubernetesIoComponent: ce.ObjectMeta.Labels["app.kubernetes.io/component"],
 							AppKubernetesIoVersion:   ce.ObjectMeta.Labels["app.kubernetes.io/version"],
 						},
 					},
-					Spec: model_chaos_experiment_yaml.ChaosExperimentYamlSpec{
-						Definition: model_chaos_experiment_yaml.ChaosExperimentYamlDefinition{
+					Spec: typespostgreschaosexperimentyaml.ChaosExperimentYamlSpec{
+						Definition: typespostgreschaosexperimentyaml.ChaosExperimentYamlDefinition{
 							Scope: ce.Spec.Definition.Scope,
-							Permissions: util.SliceMap(ce.Spec.Definition.Permissions, func(perm rbacV1.PolicyRule) model_chaos_experiment_yaml.ChaosExperimentYamlPermission {
-								return model_chaos_experiment_yaml.ChaosExperimentYamlPermission{
+							Permissions: util.SliceMap(ce.Spec.Definition.Permissions, func(perm rbacV1.PolicyRule) typespostgreschaosexperimentyaml.ChaosExperimentYamlPermission {
+								return typespostgreschaosexperimentyaml.ChaosExperimentYamlPermission{
 									APIGroups: strings.Join(perm.APIGroups, ","),
 									Resources: strings.Join(perm.Resources, ","),
 									Verbs:     strings.Join(perm.Verbs, ","),
@@ -410,13 +410,13 @@ func (pc PostgresConnector) getChaosExperimentYamls(w *typesargoworkflows.Workfl
 							ImagePullPolicy: string(ce.Spec.Definition.ImagePullPolicy),
 							Args:            strings.Join(ce.Spec.Definition.Args, ","),
 							Command:         strings.Join(ce.Spec.Definition.Command, ","),
-							Env: util.SliceMap(ce.Spec.Definition.ENVList, func(env corev1.EnvVar) model_chaos_experiment_yaml.ChaosExperimentYamlEnv {
-								return model_chaos_experiment_yaml.ChaosExperimentYamlEnv{
+							Env: util.SliceMap(ce.Spec.Definition.ENVList, func(env corev1.EnvVar) typespostgreschaosexperimentyaml.ChaosExperimentYamlEnv {
+								return typespostgreschaosexperimentyaml.ChaosExperimentYamlEnv{
 									Name:  env.Name,
 									Value: env.Value,
 								}
 							}),
-							Labels: model_chaos_experiment_yaml.ChaosExperimentYamlDefinitionLabels{
+							Labels: typespostgreschaosexperimentyaml.ChaosExperimentYamlDefinitionLabels{
 								Name:                           ce.Spec.Definition.Labels["name"],
 								AppKubernetesIoPartOf:          ce.Spec.Definition.Labels["app.kubernetes.io/part-of"],
 								AppKubernetesIoComponent:       ce.Spec.Definition.Labels["app.kubernetes.io/component"],
@@ -432,8 +432,8 @@ func (pc PostgresConnector) getChaosExperimentYamls(w *typesargoworkflows.Workfl
 	return mces
 }
 
-func (pc PostgresConnector) getChaosEngineYamls(w *typesargoworkflows.Workflow) []model_chaos_engine_yaml.ChaosEngineYaml {
-	var mces []model_chaos_engine_yaml.ChaosEngineYaml
+func (pc PostgresConnector) getChaosEngineYamls(w *typesargoworkflows.Workflow) []typespostgreschaosengineyaml.ChaosEngineYaml {
+	var mces []typespostgreschaosengineyaml.ChaosEngineYaml
 	for _, t := range w.Spec.Templates {
 		if strings.Contains(t.Container.Image, "litmus-checker") {
 			for _, a := range t.Inputs.Artifacts {
@@ -442,35 +442,35 @@ func (pc PostgresConnector) getChaosEngineYamls(w *typesargoworkflows.Workflow) 
 					panic(err)
 				}
 
-				mces = append(mces, model_chaos_engine_yaml.ChaosEngineYaml{
+				mces = append(mces, typespostgreschaosengineyaml.ChaosEngineYaml{
 					APIVersion: ce.APIVersion,
 					Kind:       ce.Kind,
-					Metadata: model_chaos_engine_yaml.ChaosEngineYamlMetadata{
+					Metadata: typespostgreschaosengineyaml.ChaosEngineYamlMetadata{
 						Namespace: ce.Namespace,
-						Labels: model_chaos_engine_yaml.ChaosEngineYamlLabels{
+						Labels: typespostgreschaosengineyaml.ChaosEngineYamlLabels{
 							WorkflowRunID: ce.Labels["workflow_run_id"],
 							WorkflowName:  ce.Labels["workflow_name"],
 						},
-						Annotations: model_chaos_engine_yaml.ChaosEngineYamlAnnotations{
+						Annotations: typespostgreschaosengineyaml.ChaosEngineYamlAnnotations{
 							ProbeRef: ce.ObjectMeta.Annotations["probeRef"],
 						},
 						GenerateName: ce.ObjectMeta.GenerateName,
 					},
-					Spec: model_chaos_engine_yaml.ChaosEngineYamlSpec{
+					Spec: typespostgreschaosengineyaml.ChaosEngineYamlSpec{
 						EngineState: string(ce.Spec.EngineState),
-						Appinfo: model_chaos_engine_yaml.ChaosEngineYamlAppInfo{
+						Appinfo: typespostgreschaosengineyaml.ChaosEngineYamlAppInfo{
 							Appns:    ce.Spec.Appinfo.Appns,
 							Applabel: ce.Spec.Appinfo.Applabel,
 							Appkind:  ce.Spec.Appinfo.AppKind,
 						},
 						ChaosServiceAccount: ce.Spec.ChaosServiceAccount,
-						Experiments: util.SliceMap(ce.Spec.Experiments, func(exp v1alpha1.ExperimentList) model_chaos_engine_yaml.ChaosEngineYamlExperiment {
-							return model_chaos_engine_yaml.ChaosEngineYamlExperiment{
+						Experiments: util.SliceMap(ce.Spec.Experiments, func(exp v1alpha1.ExperimentList) typespostgreschaosengineyaml.ChaosEngineYamlExperiment {
+							return typespostgreschaosengineyaml.ChaosEngineYamlExperiment{
 								Name: exp.Name,
-								Spec: model_chaos_engine_yaml.ChaosEngineYamlExperimentSpec{
-									Components: model_chaos_engine_yaml.ChaosEngineYamlCompoments{
-										Env: util.SliceMap(exp.Spec.Components.ENV, func(env corev1.EnvVar) model_chaos_engine_yaml.ChaosEngineYamlEnv {
-											return model_chaos_engine_yaml.ChaosEngineYamlEnv{
+								Spec: typespostgreschaosengineyaml.ChaosEngineYamlExperimentSpec{
+									Components: typespostgreschaosengineyaml.ChaosEngineYamlCompoments{
+										Env: util.SliceMap(exp.Spec.Components.ENV, func(env corev1.EnvVar) typespostgreschaosengineyaml.ChaosEngineYamlEnv {
+											return typespostgreschaosengineyaml.ChaosEngineYamlEnv{
 												Name:  env.Name,
 												Value: env.Value,
 											}
@@ -487,10 +487,10 @@ func (pc PostgresConnector) getChaosEngineYamls(w *typesargoworkflows.Workflow) 
 	return mces
 }
 
-func (pc PostgresConnector) getNodes(cerns map[string]litmus_chaos_experiment_run.Node) []model_chaos_experiment_run.ChaosExperimentRunNode {
-	var mcerns []model_chaos_experiment_run.ChaosExperimentRunNode
+func (pc PostgresConnector) getNodes(cerns map[string]litmus_chaos_experiment_run.Node) []typespostgreschaosexperimentrun.ChaosExperimentRunNode {
+	var mcerns []typespostgreschaosexperimentrun.ChaosExperimentRunNode
 	for name, cern := range cerns {
-		mcerns = append(mcerns, model_chaos_experiment_run.ChaosExperimentRunNode{
+		mcerns = append(mcerns, typespostgreschaosexperimentrun.ChaosExperimentRunNode{
 			NodeName:   name,
 			Name:       cern.Name,
 			Phase:      cern.Phase,
@@ -499,11 +499,11 @@ func (pc PostgresConnector) getNodes(cerns map[string]litmus_chaos_experiment_ru
 			FinishedAt: pc.getTimeFromSecString(cern.FinishedAt),
 			Children:   strings.Join(cern.Children, ","),
 			Type:       cern.Type,
-			ChaosData: func(cern litmus_chaos_experiment_run.Node) *model_chaos_experiment_run.ChaosExperimentRunChaosData {
+			ChaosData: func(cern litmus_chaos_experiment_run.Node) *typespostgreschaosexperimentrun.ChaosExperimentRunChaosData {
 				if cern.ChaosExp == nil {
 					return nil
 				}
-				return &model_chaos_experiment_run.ChaosExperimentRunChaosData{
+				return &typespostgreschaosexperimentrun.ChaosExperimentRunChaosData{
 					EngineUID:              cern.ChaosExp.EngineUID,
 					EngineContext:          cern.ChaosExp.EngineContext,
 					EngineName:             cern.ChaosExp.EngineName,
@@ -516,15 +516,15 @@ func (pc PostgresConnector) getNodes(cerns map[string]litmus_chaos_experiment_ru
 					RunnerPod:              cern.ChaosExp.RunnerPod,
 					ProbeSuccessPercentage: cern.ChaosExp.ProbeSuccessPercentage,
 					FailStep:               cern.ChaosExp.FailStep,
-					ChaosResult: model_chaos_experiment_run.ChaosExperimentRunChaosResult{
-						Metadata: model_chaos_experiment_run.ChaosExperimentRunMetadata{
+					ChaosResult: typespostgreschaosexperimentrun.ChaosExperimentRunChaosResult{
+						Metadata: typespostgreschaosexperimentrun.ChaosExperimentRunMetadata{
 							Name:              cern.ChaosExp.ChaosResult.ObjectMeta.Name,
 							Namespace:         cern.ChaosExp.ChaosResult.ObjectMeta.Namespace,
 							UID:               string(cern.ChaosExp.ChaosResult.ObjectMeta.UID),
 							ResourceVersion:   cern.ChaosExp.ChaosResult.ObjectMeta.ResourceVersion,
 							Generation:        cern.ChaosExp.ChaosResult.ObjectMeta.Generation,
 							CreationTimestamp: &cern.ChaosExp.ChaosResult.ObjectMeta.CreationTimestamp.Time,
-							Labels: model_chaos_experiment_run.ChaosExperimentRunLabels{
+							Labels: typespostgreschaosexperimentrun.ChaosExperimentRunLabels{
 								AppKubernetesIoComponent:       cern.ChaosExp.ChaosResult.ObjectMeta.Labels["app.kubernetes.io/component"],
 								AppKubernetesIoPartOf:          cern.ChaosExp.ChaosResult.ObjectMeta.Labels["app.kubernetes.io/part-of"],
 								AppKubernetesIoVersion:         cern.ChaosExp.ChaosResult.ObjectMeta.Labels["app.kubernetes.io/version"],
@@ -540,33 +540,33 @@ func (pc PostgresConnector) getNodes(cerns map[string]litmus_chaos_experiment_ru
 								WorkflowRunID:                  cern.ChaosExp.ChaosResult.ObjectMeta.Labels["workflow_run_id"],
 							},
 						},
-						Spec: model_chaos_experiment_run.ChaosExperimentRunSpec{
+						Spec: typespostgreschaosexperimentrun.ChaosExperimentRunSpec{
 							EngineName:     cern.ChaosExp.ChaosResult.Spec.EngineName,
 							ExperimentName: cern.ChaosExp.ChaosResult.Spec.ExperimentName,
 						},
-						Status: model_chaos_experiment_run.ChaosExperimentRunStatus{
-							ExperimentStatus: model_chaos_experiment_run.ChaosExperimentRunExperimentStatus{
+						Status: typespostgreschaosexperimentrun.ChaosExperimentRunStatus{
+							ExperimentStatus: typespostgreschaosexperimentrun.ChaosExperimentRunExperimentStatus{
 								Phase:                  string(cern.ChaosExp.ChaosResult.Status.ExperimentStatus.Phase),
 								Verdict:                string(cern.ChaosExp.ChaosResult.Status.ExperimentStatus.Verdict),
 								ProbeSuccessPercentage: cern.ChaosExp.ChaosResult.Status.ExperimentStatus.ProbeSuccessPercentage,
 							},
-							ProbeStatuses: util.SliceMap(cern.ChaosExp.ChaosResult.Status.ProbeStatuses, func(probeStatus v1alpha1.ProbeStatuses) model_chaos_experiment_run.ChaosExperimentRunProbeStatus {
-								return model_chaos_experiment_run.ChaosExperimentRunProbeStatus{
+							ProbeStatuses: util.SliceMap(cern.ChaosExp.ChaosResult.Status.ProbeStatuses, func(probeStatus v1alpha1.ProbeStatuses) typespostgreschaosexperimentrun.ChaosExperimentRunProbeStatus {
+								return typespostgreschaosexperimentrun.ChaosExperimentRunProbeStatus{
 									Name: probeStatus.Name,
 									Type: probeStatus.Type,
 									Mode: probeStatus.Mode,
-									Status: model_chaos_experiment_run.ChaosExperimentRunProbeStatusesStatus{
+									Status: typespostgreschaosexperimentrun.ChaosExperimentRunProbeStatusesStatus{
 										Verdict:     string(probeStatus.Status.Verdict),
 										Description: probeStatus.Status.Description,
 									},
 								}
 							}),
-							History: model_chaos_experiment_run.ChaosExperimentRunHistory{
+							History: typespostgreschaosexperimentrun.ChaosExperimentRunHistory{
 								PassedRuns:  cern.ChaosExp.ChaosResult.Status.History.PassedRuns,
 								FailedRuns:  cern.ChaosExp.ChaosResult.Status.History.FailedRuns,
 								StoppedRuns: cern.ChaosExp.ChaosResult.Status.History.StoppedRuns,
-								Targets: util.SliceMap(cern.ChaosExp.ChaosResult.Status.History.Targets, func(target v1alpha1.TargetDetails) model_chaos_experiment_run.ChaosExperimentRunHistoryTarget {
-									return model_chaos_experiment_run.ChaosExperimentRunHistoryTarget{
+								Targets: util.SliceMap(cern.ChaosExp.ChaosResult.Status.History.Targets, func(target v1alpha1.TargetDetails) typespostgreschaosexperimentrun.ChaosExperimentRunHistoryTarget {
+									return typespostgreschaosexperimentrun.ChaosExperimentRunHistoryTarget{
 										Name:        target.Name,
 										Kind:        target.Kind,
 										ChaosStatus: target.ChaosStatus,

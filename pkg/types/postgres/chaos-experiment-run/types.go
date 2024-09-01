@@ -1,4 +1,4 @@
-package model_chaos_experiment_run
+package typespostgreschaosexperimentrun
 
 import (
 	"time"
