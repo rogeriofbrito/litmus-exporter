@@ -3,14 +3,14 @@ package util
 import (
 	"encoding/json"
 
-	"github.com/litmuschaos/chaos-operator/api/litmuschaos/v1alpha1"
-	"github.com/litmuschaos/litmus/chaoscenter/graphql/server/pkg/database/mongodb/chaos_experiment"
-	"github.com/litmuschaos/litmus/chaoscenter/graphql/server/pkg/database/mongodb/chaos_experiment_run"
+	litmus_v1alpha1 "github.com/litmuschaos/chaos-operator/api/litmuschaos/v1alpha1"
+	mongo_chaos_experiment "github.com/litmuschaos/litmus/chaoscenter/graphql/server/pkg/database/mongodb/chaos_experiment"
+	mongo_chaos_experiment_run "github.com/litmuschaos/litmus/chaoscenter/graphql/server/pkg/database/mongodb/chaos_experiment_run"
 	jsonfield "github.com/rogeriofbrito/litmus-exporter/pkg/json-field"
 	"gopkg.in/yaml.v3"
 )
 
-func ParseExperimentManifests(rev chaos_experiment.ExperimentRevision) (*jsonfield.ExperimentManifest, error) {
+func ParseExperimentManifests(rev mongo_chaos_experiment.ExperimentRevision) (*jsonfield.ExperimentManifest, error) {
 	em := &jsonfield.ExperimentManifest{}
 	if err := json.Unmarshal([]byte(rev.ExperimentManifest), em); err != nil {
 		return nil, err
@@ -18,7 +18,7 @@ func ParseExperimentManifests(rev chaos_experiment.ExperimentRevision) (*jsonfie
 	return em, nil
 }
 
-func ParseExecutionData(cer chaos_experiment_run.ChaosExperimentRun) (*jsonfield.ChaosExperimentRunExecutionData, error) {
+func ParseExecutionData(cer mongo_chaos_experiment_run.ChaosExperimentRun) (*jsonfield.ChaosExperimentRunExecutionData, error) {
 	ed := &jsonfield.ChaosExperimentRunExecutionData{}
 	if err := json.Unmarshal([]byte(cer.ExecutionData), ed); err != nil {
 		return nil, err
@@ -27,13 +27,13 @@ func ParseExecutionData(cer chaos_experiment_run.ChaosExperimentRun) (*jsonfield
 	return ed, nil
 }
 
-func ParseChaosExperimentYaml(yamlStr string) (*v1alpha1.ChaosExperiment, error) {
+func ParseChaosExperimentYaml(yamlStr string) (*litmus_v1alpha1.ChaosExperiment, error) {
 	yamlData := []byte(yamlStr)
 	jsonData, err := yamlToJson(yamlData)
 	if err != nil {
 		return nil, err
 	}
-	var ce v1alpha1.ChaosExperiment
+	var ce litmus_v1alpha1.ChaosExperiment
 	err = json.Unmarshal(jsonData, &ce)
 	if err != nil {
 		panic(err)
@@ -41,13 +41,13 @@ func ParseChaosExperimentYaml(yamlStr string) (*v1alpha1.ChaosExperiment, error)
 	return &ce, nil
 }
 
-func ParseChaosEngineYaml(yamlStr string) (*v1alpha1.ChaosEngine, error) {
+func ParseChaosEngineYaml(yamlStr string) (*litmus_v1alpha1.ChaosEngine, error) {
 	yamlData := []byte(yamlStr)
 	jsonData, err := yamlToJson(yamlData)
 	if err != nil {
 		return nil, err
 	}
-	var ce v1alpha1.ChaosEngine
+	var ce litmus_v1alpha1.ChaosEngine
 	err = json.Unmarshal(jsonData, &ce)
 	if err != nil {
 		panic(err)
