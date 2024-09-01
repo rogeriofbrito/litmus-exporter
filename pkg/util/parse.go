@@ -4,13 +4,14 @@ import (
 	"encoding/json"
 
 	litmus_v1alpha1 "github.com/litmuschaos/chaos-operator/api/litmuschaos/v1alpha1"
-	mongo_chaos_experiment "github.com/litmuschaos/litmus/chaoscenter/graphql/server/pkg/database/mongodb/chaos_experiment"
-	mongo_chaos_experiment_run "github.com/litmuschaos/litmus/chaoscenter/graphql/server/pkg/database/mongodb/chaos_experiment_run"
+	litmus_chaos_experiment_run "github.com/litmuschaos/litmus/chaoscenter/graphql/server/pkg/chaos_experiment_run"
+	mongodb_chaos_experiment "github.com/litmuschaos/litmus/chaoscenter/graphql/server/pkg/database/mongodb/chaos_experiment"
+	mongodb_chaos_experiment_run "github.com/litmuschaos/litmus/chaoscenter/graphql/server/pkg/database/mongodb/chaos_experiment_run"
 	jsonfield "github.com/rogeriofbrito/litmus-exporter/pkg/json-field"
 	"gopkg.in/yaml.v3"
 )
 
-func ParseExperimentManifests(rev mongo_chaos_experiment.ExperimentRevision) (*jsonfield.ExperimentManifest, error) {
+func ParseExperimentManifests(rev mongodb_chaos_experiment.ExperimentRevision) (*jsonfield.ExperimentManifest, error) {
 	em := &jsonfield.ExperimentManifest{}
 	if err := json.Unmarshal([]byte(rev.ExperimentManifest), em); err != nil {
 		return nil, err
@@ -18,8 +19,8 @@ func ParseExperimentManifests(rev mongo_chaos_experiment.ExperimentRevision) (*j
 	return em, nil
 }
 
-func ParseExecutionData(cer mongo_chaos_experiment_run.ChaosExperimentRun) (*jsonfield.ChaosExperimentRunExecutionData, error) {
-	ed := &jsonfield.ChaosExperimentRunExecutionData{}
+func ParseExecutionData(cer mongodb_chaos_experiment_run.ChaosExperimentRun) (*litmus_chaos_experiment_run.ExecutionData, error) {
+	ed := &litmus_chaos_experiment_run.ExecutionData{}
 	if err := json.Unmarshal([]byte(cer.ExecutionData), ed); err != nil {
 		return nil, err
 	}

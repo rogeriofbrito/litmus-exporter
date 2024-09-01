@@ -8,10 +8,11 @@ import (
 	"strings"
 	"time"
 
-	"github.com/litmuschaos/chaos-operator/api/litmuschaos/v1alpha1"
-	"github.com/litmuschaos/litmus/chaoscenter/graphql/server/pkg/database/mongodb/chaos_experiment"
-	"github.com/litmuschaos/litmus/chaoscenter/graphql/server/pkg/database/mongodb/chaos_experiment_run"
-	"github.com/litmuschaos/litmus/chaoscenter/graphql/server/pkg/database/mongodb/project"
+	"github.com/litmuschaos/chaos-operator/api/litmuschaos/v1alpha1" //TODO: rename import
+	litmus_chaos_experiment_run "github.com/litmuschaos/litmus/chaoscenter/graphql/server/pkg/chaos_experiment_run"
+	"github.com/litmuschaos/litmus/chaoscenter/graphql/server/pkg/database/mongodb/chaos_experiment"     //TODO: rename import
+	"github.com/litmuschaos/litmus/chaoscenter/graphql/server/pkg/database/mongodb/chaos_experiment_run" //TODO: rename import
+	"github.com/litmuschaos/litmus/chaoscenter/graphql/server/pkg/database/mongodb/project"              //TODO: rename import
 	jsonfield "github.com/rogeriofbrito/litmus-exporter/pkg/json-field"
 	model_chaos_engine_yaml "github.com/rogeriofbrito/litmus-exporter/pkg/model/chaos-engine-yaml"
 	model_chaos_experiment "github.com/rogeriofbrito/litmus-exporter/pkg/model/chaos-experiment"
@@ -314,7 +315,6 @@ func (pc PostgresConnector) SaveChaosExperimentRuns(ctx context.Context, cers []
 			ExecutionData: model_chaos_experiment_run.ChaosExperimentRunExecutionData{
 				ExperimentType:    ed.ExperimentType,
 				RevisionID:        ed.RevisionID,
-				NotifyID:          ed.NotifyID,
 				ExperimentID:      ed.ExperimentID,
 				EventType:         ed.EventType,
 				UID:               ed.UID,
@@ -513,7 +513,7 @@ func (pc PostgresConnector) getChaosEngineYamls(em *jsonfield.ExperimentManifest
 	return mces
 }
 
-func (pc PostgresConnector) getNodes(cerns map[string]jsonfield.ChaosExperimentRunNode) []model_chaos_experiment_run.ChaosExperimentRunNode {
+func (pc PostgresConnector) getNodes(cerns map[string]litmus_chaos_experiment_run.Node) []model_chaos_experiment_run.ChaosExperimentRunNode {
 	var mcerns []model_chaos_experiment_run.ChaosExperimentRunNode
 	for name, cern := range cerns {
 		mcerns = append(mcerns, model_chaos_experiment_run.ChaosExperimentRunNode{
@@ -525,79 +525,88 @@ func (pc PostgresConnector) getNodes(cerns map[string]jsonfield.ChaosExperimentR
 			FinishedAt: pc.getTimeFromSecString(cern.FinishedAt),
 			Children:   strings.Join(cern.Children, ","),
 			Type:       cern.Type,
-			ChaosData: model_chaos_experiment_run.ChaosExperimentRunChaosData{
-				EngineUID:              cern.ChaosData.EngineUID,
-				EngineContext:          cern.ChaosData.EngineContext,
-				EngineName:             cern.ChaosData.EngineName,
-				Namespace:              cern.ChaosData.Namespace,
-				ExperimentName:         cern.ChaosData.ExperimentName,
-				ExperimentStatus:       cern.ChaosData.ExperimentStatus,
-				LastUpdatedAt:          cern.ChaosData.LastUpdatedAt,
-				ExperimentVerdict:      cern.ChaosData.ExperimentVerdict,
-				ExperimentPod:          cern.ChaosData.ExperimentPod,
-				RunnerPod:              cern.ChaosData.RunnerPod,
-				ProbeSuccessPercentage: cern.ChaosData.ProbeSuccessPercentage,
-				FailStep:               cern.ChaosData.FailStep,
-				ChaosResult: model_chaos_experiment_run.ChaosExperimentRunChaosResult{
-					Metadata: model_chaos_experiment_run.ChaosExperimentRunMetadata{
-						Name:              cern.ChaosData.ChaosResult.Metadata.Name,
-						Namespace:         cern.ChaosData.ChaosResult.Metadata.Namespace,
-						UID:               cern.ChaosData.ChaosResult.Metadata.UID,
-						ResourceVersion:   cern.ChaosData.ChaosResult.Metadata.ResourceVersion,
-						Generation:        cern.ChaosData.ChaosResult.Metadata.Generation,
-						CreationTimestamp: pc.getTimeFromIso8601String(cern.ChaosData.ChaosResult.Metadata.CreationTimestamp),
-						Labels: model_chaos_experiment_run.ChaosExperimentRunLabels{
-							AppKubernetesIoComponent:       cern.ChaosData.ChaosResult.Metadata.Labels.AppKubernetesIoComponent,
-							AppKubernetesIoPartOf:          cern.ChaosData.ChaosResult.Metadata.Labels.AppKubernetesIoPartOf,
-							AppKubernetesIoVersion:         cern.ChaosData.ChaosResult.Metadata.Labels.AppKubernetesIoVersion,
-							BatchKubernetesIoControllerUID: cern.ChaosData.ChaosResult.Metadata.Labels.BatchKubernetesIoControllerUID,
-							BatchKubernetesIoJobName:       cern.ChaosData.ChaosResult.Metadata.Labels.BatchKubernetesIoJobName,
-							ChaosUID:                       cern.ChaosData.ChaosResult.Metadata.Labels.ChaosUID,
-							ControllerUID:                  cern.ChaosData.ChaosResult.Metadata.Labels.ControllerUID,
-							InfraID:                        cern.ChaosData.ChaosResult.Metadata.Labels.InfraID,
-							JobName:                        cern.ChaosData.ChaosResult.Metadata.Labels.JobName,
-							Name:                           cern.ChaosData.ChaosResult.Metadata.Labels.Name,
-							StepPodName:                    cern.ChaosData.ChaosResult.Metadata.Labels.StepPodName,
-							WorkflowName:                   cern.ChaosData.ChaosResult.Metadata.Labels.WorkflowName,
-							WorkflowRunID:                  cern.ChaosData.ChaosResult.Metadata.Labels.WorkflowRunID,
+			ChaosData: func(cern litmus_chaos_experiment_run.Node) *model_chaos_experiment_run.ChaosExperimentRunChaosData {
+				if cern.ChaosExp == nil {
+					return nil
+				}
+				return &model_chaos_experiment_run.ChaosExperimentRunChaosData{
+					EngineUID:              cern.ChaosExp.EngineUID,
+					EngineContext:          cern.ChaosExp.EngineContext,
+					EngineName:             cern.ChaosExp.EngineName,
+					Namespace:              cern.ChaosExp.Namespace,
+					ExperimentName:         cern.ChaosExp.ExperimentName,
+					ExperimentStatus:       cern.ChaosExp.ExperimentStatus,
+					LastUpdatedAt:          cern.ChaosExp.LastUpdatedAt,
+					ExperimentVerdict:      cern.ChaosExp.ExperimentVerdict,
+					ExperimentPod:          cern.ChaosExp.ExperimentPod,
+					RunnerPod:              cern.ChaosExp.RunnerPod,
+					ProbeSuccessPercentage: cern.ChaosExp.ProbeSuccessPercentage,
+					FailStep:               cern.ChaosExp.FailStep,
+					ChaosResult: model_chaos_experiment_run.ChaosExperimentRunChaosResult{
+						Metadata: model_chaos_experiment_run.ChaosExperimentRunMetadata{
+							/*
+								Name:              cern.ChaosExp.ChaosResult.Metadata.Name,
+								Namespace:         cern.ChaosExp.ChaosResult.Metadata.Namespace,
+								UID:               cern.ChaosExp.ChaosResult.Metadata.UID,
+								ResourceVersion:   cern.ChaosExp.ChaosResult.Metadata.ResourceVersion,
+								Generation:        cern.ChaosExp.ChaosResult.Metadata.Generation,
+								CreationTimestamp: pc.getTimeFromIso8601String(cern.ChaosExp.ChaosResult.Metadata.CreationTimestamp),
+							*/
+							Labels: model_chaos_experiment_run.ChaosExperimentRunLabels{
+								/*
+									AppKubernetesIoComponent:       cern.ChaosExp.ChaosResult.Metadata.Labels.AppKubernetesIoComponent,
+									AppKubernetesIoPartOf:          cern.ChaosExp.ChaosResult.Metadata.Labels.AppKubernetesIoPartOf,
+									AppKubernetesIoVersion:         cern.ChaosExp.ChaosResult.Metadata.Labels.AppKubernetesIoVersion,
+									BatchKubernetesIoControllerUID: cern.ChaosExp.ChaosResult.Metadata.Labels.BatchKubernetesIoControllerUID,
+									BatchKubernetesIoJobName:       cern.ChaosExp.ChaosResult.Metadata.Labels.BatchKubernetesIoJobName,
+									ChaosUID:                       cern.ChaosExp.ChaosResult.Metadata.Labels.ChaosUID,
+									ControllerUID:                  cern.ChaosExp.ChaosResult.Metadata.Labels.ControllerUID,
+									InfraID:                        cern.ChaosExp.ChaosResult.Metadata.Labels.InfraID,
+									JobName:                        cern.ChaosExp.ChaosResult.Metadata.Labels.JobName,
+									Name:                           cern.ChaosExp.ChaosResult.Metadata.Labels.Name,
+									StepPodName:                    cern.ChaosExp.ChaosResult.Metadata.Labels.StepPodName,
+									WorkflowName:                   cern.ChaosExp.ChaosResult.Metadata.Labels.WorkflowName,
+									WorkflowRunID:                  cern.ChaosExp.ChaosResult.Metadata.Labels.WorkflowRunID,
+								*/
+							},
 						},
-					},
-					Spec: model_chaos_experiment_run.ChaosExperimentRunSpec{
-						Engine:     cern.ChaosData.ChaosResult.Spec.Engine,
-						Experiment: cern.ChaosData.ChaosResult.Spec.Experiment,
-					},
-					Status: model_chaos_experiment_run.ChaosExperimentRunStatus{
-						ExperimentStatus: model_chaos_experiment_run.ChaosExperimentRunExperimentStatus{
-							Phase:                  cern.ChaosData.ChaosResult.Status.ExperimentStatus.Phase,
-							Verdict:                cern.ChaosData.ChaosResult.Status.ExperimentStatus.Verdict,
-							ProbeSuccessPercentage: cern.ChaosData.ChaosResult.Status.ExperimentStatus.ProbeSuccessPercentage,
+						Spec: model_chaos_experiment_run.ChaosExperimentRunSpec{
+							EngineName:     cern.ChaosExp.ChaosResult.Spec.EngineName,
+							ExperimentName: cern.ChaosExp.ChaosResult.Spec.ExperimentName,
 						},
-						ProbeStatuses: util.SliceMap(cern.ChaosData.ChaosResult.Status.ProbeStatuses, func(probeStatus jsonfield.ChaosExperimentRunProbeStatuses) model_chaos_experiment_run.ChaosExperimentRunProbeStatus {
-							return model_chaos_experiment_run.ChaosExperimentRunProbeStatus{
-								Name: probeStatus.Name,
-								Type: probeStatus.Type,
-								Mode: probeStatus.Mode,
-								Status: model_chaos_experiment_run.ChaosExperimentRunProbeStatusesStatus{
-									Verdict:     probeStatus.Status.Verdict,
-									Description: probeStatus.Status.Description,
-								},
-							}
-						}),
-						History: model_chaos_experiment_run.ChaosExperimentRunHistory{
-							PassedRuns:  cern.ChaosData.ChaosResult.Status.History.PassedRuns,
-							FailedRuns:  cern.ChaosData.ChaosResult.Status.History.FailedRuns,
-							StoppedRuns: cern.ChaosData.ChaosResult.Status.History.StoppedRuns,
-							Targets: util.SliceMap(cern.ChaosData.ChaosResult.Status.History.Targets, func(target jsonfield.ChaosExperimentRunHistoryTarget) model_chaos_experiment_run.ChaosExperimentRunHistoryTarget {
-								return model_chaos_experiment_run.ChaosExperimentRunHistoryTarget{
-									Name:        target.Name,
-									Kind:        target.Kind,
-									ChaosStatus: target.ChaosStatus,
+						Status: model_chaos_experiment_run.ChaosExperimentRunStatus{
+							ExperimentStatus: model_chaos_experiment_run.ChaosExperimentRunExperimentStatus{
+								Phase:                  string(cern.ChaosExp.ChaosResult.Status.ExperimentStatus.Phase),
+								Verdict:                string(cern.ChaosExp.ChaosResult.Status.ExperimentStatus.Verdict),
+								ProbeSuccessPercentage: cern.ChaosExp.ChaosResult.Status.ExperimentStatus.ProbeSuccessPercentage,
+							},
+							ProbeStatuses: util.SliceMap(cern.ChaosExp.ChaosResult.Status.ProbeStatuses, func(probeStatus v1alpha1.ProbeStatuses) model_chaos_experiment_run.ChaosExperimentRunProbeStatus {
+								return model_chaos_experiment_run.ChaosExperimentRunProbeStatus{
+									Name: probeStatus.Name,
+									Type: probeStatus.Type,
+									Mode: probeStatus.Mode,
+									Status: model_chaos_experiment_run.ChaosExperimentRunProbeStatusesStatus{
+										Verdict:     string(probeStatus.Status.Verdict),
+										Description: probeStatus.Status.Description,
+									},
 								}
 							}),
+							History: model_chaos_experiment_run.ChaosExperimentRunHistory{
+								PassedRuns:  cern.ChaosExp.ChaosResult.Status.History.PassedRuns,
+								FailedRuns:  cern.ChaosExp.ChaosResult.Status.History.FailedRuns,
+								StoppedRuns: cern.ChaosExp.ChaosResult.Status.History.StoppedRuns,
+								Targets: util.SliceMap(cern.ChaosExp.ChaosResult.Status.History.Targets, func(target v1alpha1.TargetDetails) model_chaos_experiment_run.ChaosExperimentRunHistoryTarget {
+									return model_chaos_experiment_run.ChaosExperimentRunHistoryTarget{
+										Name:        target.Name,
+										Kind:        target.Kind,
+										ChaosStatus: target.ChaosStatus,
+									}
+								}),
+							},
 						},
 					},
-				},
-			},
+				}
+			}(cern),
 		})
 	}
 	return mcerns

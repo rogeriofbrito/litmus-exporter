@@ -47,7 +47,6 @@ type ChaosExperimentRunExecutionData struct {
 	ChaosExperimentRunID uuid.UUID                `gorm:"column:chaos_experiment_run_id"`
 	ExperimentType       string                   `gorm:"column:experiment_type"`
 	RevisionID           string                   `gorm:"column:revision_id"`
-	NotifyID             string                   `gorm:"column:notify_id"`
 	ExperimentID         string                   `gorm:"column:experiment_id"`
 	EventType            string                   `gorm:"column:event_type"`
 	UID                  string                   `gorm:"column:uid"`
@@ -62,17 +61,17 @@ type ChaosExperimentRunExecutionData struct {
 }
 
 type ChaosExperimentRunNode struct {
-	ID                                uuid.UUID                   `gorm:"column:id;type:uuid;default:uuid_generate_v4();primaryKey"`
-	ChaosExperimentRunExecutionDataID uuid.UUID                   `gorm:"column:execution_data_id"`
-	NodeName                          string                      `gorm:"column:node_name"`
-	Name                              string                      `gorm:"column:name"`
-	Phase                             string                      `gorm:"column:phase"`
-	Message                           string                      `gorm:"column:message"`
-	StartedAt                         *time.Time                  `gorm:"column:started_at"`
-	FinishedAt                        *time.Time                  `gorm:"column:finished_at"`
-	Children                          string                      `gorm:"column:children"`
-	Type                              string                      `gorm:"column:type"`
-	ChaosData                         ChaosExperimentRunChaosData `gorm:"constraint:OnUpdate:CASCADE,OnDelete:CASCADE;foreignKey:node_id"`
+	ID                                uuid.UUID                    `gorm:"column:id;type:uuid;default:uuid_generate_v4();primaryKey"`
+	ChaosExperimentRunExecutionDataID uuid.UUID                    `gorm:"column:execution_data_id"`
+	NodeName                          string                       `gorm:"column:node_name"`
+	Name                              string                       `gorm:"column:name"`
+	Phase                             string                       `gorm:"column:phase"`
+	Message                           string                       `gorm:"column:message"`
+	StartedAt                         *time.Time                   `gorm:"column:started_at"`
+	FinishedAt                        *time.Time                   `gorm:"column:finished_at"`
+	Children                          string                       `gorm:"column:children"`
+	Type                              string                       `gorm:"column:type"`
+	ChaosData                         *ChaosExperimentRunChaosData `gorm:"constraint:OnUpdate:CASCADE,OnDelete:CASCADE;foreignKey:node_id"`
 }
 
 type ChaosExperimentRunChaosData struct {
@@ -114,10 +113,10 @@ type ChaosExperimentRunMetadata struct {
 }
 
 type ChaosExperimentRunSpec struct {
-	ID            uuid.UUID `gorm:"column:id;type:uuid;default:uuid_generate_v4();primaryKey"`
-	ChaosResultID uuid.UUID `gorm:"column:chaos_result_id"`
-	Engine        string    `gorm:"column:engine"`
-	Experiment    string    `gorm:"column:experiment"`
+	ID             uuid.UUID `gorm:"column:id;type:uuid;default:uuid_generate_v4();primaryKey"`
+	ChaosResultID  uuid.UUID `gorm:"column:chaos_result_id"`
+	EngineName     string    `gorm:"column:engine_name"`
+	ExperimentName string    `gorm:"column:experiment_name"`
 }
 
 type ChaosExperimentRunStatus struct {
