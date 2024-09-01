@@ -107,7 +107,7 @@ type ChaosExperimentRunMetadata struct {
 	Namespace         string                   `gorm:"column:namespace"`
 	UID               string                   `gorm:"column:uid"`
 	ResourceVersion   string                   `gorm:"column:resource_version"`
-	Generation        int                      `gorm:"column:generation"`
+	Generation        int64                    `gorm:"column:generation"`
 	CreationTimestamp *time.Time               `gorm:"column:creation_timestamp"`
 	Labels            ChaosExperimentRunLabels `gorm:"constraint:OnUpdate:CASCADE,OnDelete:CASCADE;foreignKey:metadata_id"`
 }

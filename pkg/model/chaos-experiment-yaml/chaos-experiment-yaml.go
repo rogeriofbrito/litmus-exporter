@@ -3,19 +3,12 @@ package model_chaos_experiment_yaml
 import "github.com/google/uuid"
 
 type ChaosExperimentYaml struct {
-	ID          uuid.UUID                      `gorm:"column:id;type:uuid;default:uuid_generate_v4();primaryKey"`
-	RevisionID  uuid.UUID                      `gorm:"column:revision_id"`
-	APIVersion  string                         `gorm:"column:apiVersion"`
-	Description ChaosExperimentYamlDescription `gorm:"constraint:OnUpdate:CASCADE,OnDelete:CASCADE;foreignKey:chaos_experiment_yaml_id"`
-	Kind        string                         `gorm:"column:kind"`
-	Metadata    ChaosExperimentYamlMetadata    `gorm:"constraint:OnUpdate:CASCADE,OnDelete:CASCADE;foreignKey:chaos_experiment_yaml_id"`
-	Spec        ChaosExperimentYamlSpec        `gorm:"constraint:OnUpdate:CASCADE,OnDelete:CASCADE;foreignKey:chaos_experiment_yaml_id"`
-}
-
-type ChaosExperimentYamlDescription struct {
-	ID                    uuid.UUID `gorm:"column:id;type:uuid;default:uuid_generate_v4();primaryKey"`
-	ChaosExperimentYamlID uuid.UUID `gorm:"column:chaos_experiment_yaml_id"`
-	Message               string    `gorm:"column:message"`
+	ID         uuid.UUID                   `gorm:"column:id;type:uuid;default:uuid_generate_v4();primaryKey"`
+	RevisionID uuid.UUID                   `gorm:"column:revision_id"`
+	APIVersion string                      `gorm:"column:apiVersion"`
+	Kind       string                      `gorm:"column:kind"`
+	Metadata   ChaosExperimentYamlMetadata `gorm:"constraint:OnUpdate:CASCADE,OnDelete:CASCADE;foreignKey:chaos_experiment_yaml_id"`
+	Spec       ChaosExperimentYamlSpec     `gorm:"constraint:OnUpdate:CASCADE,OnDelete:CASCADE;foreignKey:chaos_experiment_yaml_id"`
 }
 
 type ChaosExperimentYamlMetadata struct {

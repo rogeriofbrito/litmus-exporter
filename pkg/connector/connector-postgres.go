@@ -62,7 +62,6 @@ func (pc PostgresConnector) Init(ctx context.Context) error {
 		&model_chaos_experiment.ChaosExperimentProbe{},
 		//ChaosExperimentYaml
 		&model_chaos_experiment_yaml.ChaosExperimentYaml{},
-		&model_chaos_experiment_yaml.ChaosExperimentYamlDescription{},
 		&model_chaos_experiment_yaml.ChaosExperimentYamlMetadata{},
 		&model_chaos_experiment_yaml.ChaosExperimentYamlLabels{},
 		&model_chaos_experiment_yaml.ChaosExperimentYamlSpec{},
@@ -160,29 +159,27 @@ func (pc PostgresConnector) SaveChaosExperiments(ctx context.Context, ces []chao
 			InfraID:        ce.InfraID,
 			ExperimentType: string(ce.ExperimentType),
 			Revision: util.SliceMap(ce.Revision, func(rev chaos_experiment.ExperimentRevision) model_chaos_experiment.ChaosExperimentRevision {
-				em, err := util.ParseExperimentManifests(rev)
+				w, err := util.ParseExperimentManifests(rev)
 				if err != nil {
 					panic(err)
 				}
 				return model_chaos_experiment.ChaosExperimentRevision{
 					RevisionID: rev.RevisionID,
 					ExperimentManifest: model_chaos_experiment.ChaosExperimentManifest{
-						Kind:       em.Kind,
-						APIVersion: em.APIVersion,
-						/*
-							Metadata: model_chaos_experiment.ChaosExperimentMetadata{
-								Name:              em.Metadata.Name,
-								CreationTimestamp: pc.getTimeFromMiliSecInt64(em.Metadata.CreationTimestamp),
-								Labels: model_chaos_experiment.ChaosExperimentLabels{
-									InfraID:              em.Metadata.Labels.InfraID,
-									RevisionID:           em.Metadata.Labels.RevisionID,
-									WorkflowID:           em.Metadata.Labels.WorkflowID,
-									ControllerInstanceID: em.Metadata.Labels.WorkflowsArgoprojIoControllerInstanceid,
-								},
+						Kind:       w.Kind,
+						APIVersion: w.APIVersion,
+						Metadata: model_chaos_experiment.ChaosExperimentMetadata{
+							Name:              w.ObjectMeta.Name,
+							CreationTimestamp: &w.ObjectMeta.CreationTimestamp.Time,
+							Labels: model_chaos_experiment.ChaosExperimentLabels{
+								InfraID:              w.ObjectMeta.Labels["infra_id"],
+								RevisionID:           w.ObjectMeta.Labels["revision_id"],
+								WorkflowID:           w.ObjectMeta.Labels["workflow_id"],
+								ControllerInstanceID: w.ObjectMeta.Labels["controller_instance_id"],
 							},
-						*/
+						},
 						Spec: model_chaos_experiment.ChaosExperimentSpec{
-							Templates: util.SliceMap(em.Spec.Templates, func(temp argoworkflowstypes.Template) model_chaos_experiment.ChaosExperimentTemplate {
+							Templates: util.SliceMap(w.Spec.Templates, func(temp argoworkflowstypes.Template) model_chaos_experiment.ChaosExperimentTemplate {
 								return model_chaos_experiment.ChaosExperimentTemplate{
 									Name: temp.Name,
 									Steps: model_chaos_experiment.ChaosExperimentSteps{
@@ -207,31 +204,31 @@ func (pc PostgresConnector) SaveChaosExperiments(ctx context.Context, ces []chao
 									},
 								}
 							}),
-							Entrypoint: em.Spec.Entrypoint,
+							Entrypoint: w.Spec.Entrypoint,
 							Arguments: model_chaos_experiment.ChaosExperimentArguments{
-								Parameters: util.SliceMap(em.Spec.Arguments.Parameters, func(param argoworkflowstypes.Parameter) model_chaos_experiment.ChaosExperimentParameter {
+								Parameters: util.SliceMap(w.Spec.Arguments.Parameters, func(param argoworkflowstypes.Parameter) model_chaos_experiment.ChaosExperimentParameter {
 									return model_chaos_experiment.ChaosExperimentParameter{
 										Name:  param.Name,
 										Value: param.Value,
 									}
 								}),
 							},
-							ServiceAccountName: em.Spec.ServiceAccountName,
+							ServiceAccountName: w.Spec.ServiceAccountName,
 							PodGC: model_chaos_experiment.ChaosExperimentPodGC{
-								Strategy: em.Spec.PodGC.Strategy,
+								Strategy: w.Spec.PodGC.Strategy,
 							},
 							SecurityContext: model_chaos_experiment.ChaosExperimentSecurityContext{
-								RunAsUser:    em.Spec.SecurityContext.RunAsUser,
-								RunAsNonRoot: em.Spec.SecurityContext.RunAsNonRoot,
+								RunAsUser:    w.Spec.SecurityContext.RunAsUser,
+								RunAsNonRoot: w.Spec.SecurityContext.RunAsNonRoot,
 							},
 						},
 						Status: model_chaos_experiment.ChaosExperimentStatus{
-							StartedAt:  pc.getTimeFromMiliSecInt64(em.Status.StartedAt),
-							FinishedAt: pc.getTimeFromMiliSecInt64(em.Status.FinishedAt),
+							StartedAt:  pc.getTimeFromMiliSecInt64(w.Status.StartedAt),
+							FinishedAt: pc.getTimeFromMiliSecInt64(w.Status.FinishedAt),
 						},
 					},
-					ChaosExperimentYamls: pc.getChaosExperimentYamls(em),
-					ChaosEngineYamls:     pc.getChaosEngineYamls(em),
+					ChaosExperimentYamls: pc.getChaosExperimentYamls(w),
+					ChaosEngineYamls:     pc.getChaosEngineYamls(w),
 				}
 			}),
 			IsCustomExperiment: ce.IsCustomExperiment,
@@ -378,17 +375,6 @@ func (pc PostgresConnector) getTimeFromSecString(ts string) *time.Time {
 	return &time
 }
 
-func (pc PostgresConnector) getTimeFromIso8601String(iso8601Date string) *time.Time {
-	if iso8601Date == "" {
-		return nil
-	}
-	parsedTime, err := time.Parse(time.RFC3339, iso8601Date)
-	if err != nil {
-		return nil
-	}
-	return &parsedTime
-}
-
 func (pc PostgresConnector) getChaosExperimentYamls(w *argoworkflowstypes.Workflow) []model_chaos_experiment_yaml.ChaosExperimentYaml {
 	var mces []model_chaos_experiment_yaml.ChaosExperimentYaml
 	for _, t := range w.Spec.Templates {
@@ -401,22 +387,14 @@ func (pc PostgresConnector) getChaosExperimentYamls(w *argoworkflowstypes.Workfl
 
 				mces = append(mces, model_chaos_experiment_yaml.ChaosExperimentYaml{
 					APIVersion: ce.APIVersion,
-					/*
-						Description: model_chaos_experiment_yaml.ChaosExperimentYamlDescription{
-							Message: ce.Description.Message,
-						},
-					*/
-					Kind: ce.Kind,
+					Kind:       ce.Kind,
 					Metadata: model_chaos_experiment_yaml.ChaosExperimentYamlMetadata{
 						Name: ce.Name,
-						/*
-							Labels: model_chaos_experiment_yaml.ChaosExperimentYamlLabels{
-								Name:                     ce.GetObjectMeta().GetName(),
-								AppKubernetesIoPartOf:    ce.Metadata.Labels.AppKubernetesIoPartOf,
-								AppKubernetesIoComponent: ce.Metadata.Labels.AppKubernetesIoComponent,
-								AppKubernetesIoVersion:   ce.Metadata.Labels.AppKubernetesIoVersion,
-							},
-						*/
+						Labels: model_chaos_experiment_yaml.ChaosExperimentYamlLabels{
+							AppKubernetesIoPartOf:    ce.ObjectMeta.Labels["app.kubernetes.io/part-of"],
+							AppKubernetesIoComponent: ce.ObjectMeta.Labels["app.kubernetes.io/component"],
+							AppKubernetesIoVersion:   ce.ObjectMeta.Labels["app.kubernetes.io/version"],
+						},
 					},
 					Spec: model_chaos_experiment_yaml.ChaosExperimentYamlSpec{
 						Definition: model_chaos_experiment_yaml.ChaosExperimentYamlDefinition{
@@ -438,15 +416,13 @@ func (pc PostgresConnector) getChaosExperimentYamls(w *argoworkflowstypes.Workfl
 									Value: env.Value,
 								}
 							}),
-							/*
-								Labels: model_chaos_experiment_yaml.ChaosExperimentYamlDefinitionLabels{
-									Name:                           ce.Spec.Definition.Labels.Name,
-									AppKubernetesIoPartOf:          ce.Spec.Definition.Labels.AppKubernetesIoPartOf,
-									AppKubernetesIoComponent:       ce.Spec.Definition.Labels.AppKubernetesIoComponent,
-									AppKubernetesIoRuntimeAPIUsage: ce.Spec.Definition.Labels.AppKubernetesIoRuntimeAPIUsage,
-									AppKubernetesIoVersion:         ce.Spec.Definition.Labels.AppKubernetesIoVersion,
-								},
-							*/
+							Labels: model_chaos_experiment_yaml.ChaosExperimentYamlDefinitionLabels{
+								Name:                           ce.Spec.Definition.Labels["name"],
+								AppKubernetesIoPartOf:          ce.Spec.Definition.Labels["app.kubernetes.io/part-of"],
+								AppKubernetesIoComponent:       ce.Spec.Definition.Labels["app.kubernetes.io/component"],
+								AppKubernetesIoRuntimeAPIUsage: ce.Spec.Definition.Labels["app.kubernetes.io/runtime-api-usage"],
+								AppKubernetesIoVersion:         ce.Spec.Definition.Labels["app.kubernetes.io/version"],
+							},
 						},
 					},
 				})
@@ -471,18 +447,14 @@ func (pc PostgresConnector) getChaosEngineYamls(w *argoworkflowstypes.Workflow) 
 					Kind:       ce.Kind,
 					Metadata: model_chaos_engine_yaml.ChaosEngineYamlMetadata{
 						Namespace: ce.Namespace,
-						/*
-							Labels: model_chaos_engine_yaml.ChaosEngineYamlLabels{
-								WorkflowRunID: ce.Metadata.Labels.WorkflowRunID,
-								WorkflowName:  ce.Metadata.Labels.WorkflowName,
-							},
-						*/
-						/*
-							Annotations: model_chaos_engine_yaml.ChaosEngineYamlAnnotations{
-								ProbeRef: ce.Metadata.Annotations.ProbeRef,
-							},
-						*/
-						//GenerateName: ce.Metadata.GenerateName,
+						Labels: model_chaos_engine_yaml.ChaosEngineYamlLabels{
+							WorkflowRunID: ce.Labels["workflow_run_id"],
+							WorkflowName:  ce.Labels["workflow_name"],
+						},
+						Annotations: model_chaos_engine_yaml.ChaosEngineYamlAnnotations{
+							ProbeRef: ce.ObjectMeta.Annotations["probeRef"],
+						},
+						GenerateName: ce.ObjectMeta.GenerateName,
 					},
 					Spec: model_chaos_engine_yaml.ChaosEngineYamlSpec{
 						EngineState: string(ce.Spec.EngineState),
@@ -546,30 +518,26 @@ func (pc PostgresConnector) getNodes(cerns map[string]litmus_chaos_experiment_ru
 					FailStep:               cern.ChaosExp.FailStep,
 					ChaosResult: model_chaos_experiment_run.ChaosExperimentRunChaosResult{
 						Metadata: model_chaos_experiment_run.ChaosExperimentRunMetadata{
-							/*
-								Name:              cern.ChaosExp.ChaosResult.Metadata.Name,
-								Namespace:         cern.ChaosExp.ChaosResult.Metadata.Namespace,
-								UID:               cern.ChaosExp.ChaosResult.Metadata.UID,
-								ResourceVersion:   cern.ChaosExp.ChaosResult.Metadata.ResourceVersion,
-								Generation:        cern.ChaosExp.ChaosResult.Metadata.Generation,
-								CreationTimestamp: pc.getTimeFromIso8601String(cern.ChaosExp.ChaosResult.Metadata.CreationTimestamp),
-							*/
+							Name:              cern.ChaosExp.ChaosResult.ObjectMeta.Name,
+							Namespace:         cern.ChaosExp.ChaosResult.ObjectMeta.Namespace,
+							UID:               string(cern.ChaosExp.ChaosResult.ObjectMeta.UID),
+							ResourceVersion:   cern.ChaosExp.ChaosResult.ObjectMeta.ResourceVersion,
+							Generation:        cern.ChaosExp.ChaosResult.ObjectMeta.Generation,
+							CreationTimestamp: &cern.ChaosExp.ChaosResult.ObjectMeta.CreationTimestamp.Time,
 							Labels: model_chaos_experiment_run.ChaosExperimentRunLabels{
-								/*
-									AppKubernetesIoComponent:       cern.ChaosExp.ChaosResult.Metadata.Labels.AppKubernetesIoComponent,
-									AppKubernetesIoPartOf:          cern.ChaosExp.ChaosResult.Metadata.Labels.AppKubernetesIoPartOf,
-									AppKubernetesIoVersion:         cern.ChaosExp.ChaosResult.Metadata.Labels.AppKubernetesIoVersion,
-									BatchKubernetesIoControllerUID: cern.ChaosExp.ChaosResult.Metadata.Labels.BatchKubernetesIoControllerUID,
-									BatchKubernetesIoJobName:       cern.ChaosExp.ChaosResult.Metadata.Labels.BatchKubernetesIoJobName,
-									ChaosUID:                       cern.ChaosExp.ChaosResult.Metadata.Labels.ChaosUID,
-									ControllerUID:                  cern.ChaosExp.ChaosResult.Metadata.Labels.ControllerUID,
-									InfraID:                        cern.ChaosExp.ChaosResult.Metadata.Labels.InfraID,
-									JobName:                        cern.ChaosExp.ChaosResult.Metadata.Labels.JobName,
-									Name:                           cern.ChaosExp.ChaosResult.Metadata.Labels.Name,
-									StepPodName:                    cern.ChaosExp.ChaosResult.Metadata.Labels.StepPodName,
-									WorkflowName:                   cern.ChaosExp.ChaosResult.Metadata.Labels.WorkflowName,
-									WorkflowRunID:                  cern.ChaosExp.ChaosResult.Metadata.Labels.WorkflowRunID,
-								*/
+								AppKubernetesIoComponent:       cern.ChaosExp.ChaosResult.ObjectMeta.Labels["app.kubernetes.io/component"],
+								AppKubernetesIoPartOf:          cern.ChaosExp.ChaosResult.ObjectMeta.Labels["app.kubernetes.io/part-of"],
+								AppKubernetesIoVersion:         cern.ChaosExp.ChaosResult.ObjectMeta.Labels["app.kubernetes.io/version"],
+								BatchKubernetesIoControllerUID: cern.ChaosExp.ChaosResult.ObjectMeta.Labels["batch.kubernetes.io/controller-uid"],
+								BatchKubernetesIoJobName:       cern.ChaosExp.ChaosResult.ObjectMeta.Labels["batch.kubernetes.io/job-name"],
+								ChaosUID:                       cern.ChaosExp.ChaosResult.ObjectMeta.Labels["chaosUID"],
+								ControllerUID:                  cern.ChaosExp.ChaosResult.ObjectMeta.Labels["controller-uid"],
+								InfraID:                        cern.ChaosExp.ChaosResult.ObjectMeta.Labels["infra_id"],
+								JobName:                        cern.ChaosExp.ChaosResult.ObjectMeta.Labels["job-name"],
+								Name:                           cern.ChaosExp.ChaosResult.ObjectMeta.Labels["name"],
+								StepPodName:                    cern.ChaosExp.ChaosResult.ObjectMeta.Labels["step_pod_name"],
+								WorkflowName:                   cern.ChaosExp.ChaosResult.ObjectMeta.Labels["workflow_name"],
+								WorkflowRunID:                  cern.ChaosExp.ChaosResult.ObjectMeta.Labels["workflow_run_id"],
 							},
 						},
 						Spec: model_chaos_experiment_run.ChaosExperimentRunSpec{
