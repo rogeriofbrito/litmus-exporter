@@ -1,25 +1,12 @@
-package jsonfield
+package argoworkflowstypes
 
-type ExperimentManifest struct {
-	Kind       string                     `json:"kind"`
-	APIVersion string                     `json:"apiVersion"`
-	Metadata   ExperimentManifestMetadata `json:"metadata"`
-	Spec       Spec                       `json:"spec"`
-	Status     Status                     `json:"status"`
-}
+import metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-type ExperimentManifestMetadata struct {
-	Name              string `json:"name"`
-	Namespace         string `json:"namespace"`
-	CreationTimestamp int64  `json:"creationTimestamp"`
-	Labels            Labels `json:"labels"`
-}
-
-type Labels struct {
-	InfraID                                 string `json:"infra_id"`
-	RevisionID                              string `json:"revision_id"`
-	WorkflowID                              string `json:"workflow_id"`
-	WorkflowsArgoprojIoControllerInstanceid string `json:"workflows.argoproj.io/controller-instanceid"`
+type Workflow struct {
+	metav1.TypeMeta   `json:",inline"`
+	metav1.ObjectMeta `json:"metadata" protobuf:"bytes,1,opt,name=metadata"`
+	Spec              Spec   `json:"spec"`
+	Status            Status `json:"status"`
 }
 
 type Spec struct {

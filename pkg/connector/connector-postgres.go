@@ -13,7 +13,7 @@ import (
 	"github.com/litmuschaos/litmus/chaoscenter/graphql/server/pkg/database/mongodb/chaos_experiment"     //TODO: rename import
 	"github.com/litmuschaos/litmus/chaoscenter/graphql/server/pkg/database/mongodb/chaos_experiment_run" //TODO: rename import
 	"github.com/litmuschaos/litmus/chaoscenter/graphql/server/pkg/database/mongodb/project"              //TODO: rename import
-	jsonfield "github.com/rogeriofbrito/litmus-exporter/pkg/json-field"
+	argoworkflowstypes "github.com/rogeriofbrito/litmus-exporter/pkg/argo-workflows-types"
 	model_chaos_engine_yaml "github.com/rogeriofbrito/litmus-exporter/pkg/model/chaos-engine-yaml"
 	model_chaos_experiment "github.com/rogeriofbrito/litmus-exporter/pkg/model/chaos-experiment"
 	model_chaos_experiment_run "github.com/rogeriofbrito/litmus-exporter/pkg/model/chaos-experiment-run"
@@ -169,28 +169,30 @@ func (pc PostgresConnector) SaveChaosExperiments(ctx context.Context, ces []chao
 					ExperimentManifest: model_chaos_experiment.ChaosExperimentManifest{
 						Kind:       em.Kind,
 						APIVersion: em.APIVersion,
-						Metadata: model_chaos_experiment.ChaosExperimentMetadata{
-							Name:              em.Metadata.Name,
-							CreationTimestamp: pc.getTimeFromMiliSecInt64(em.Metadata.CreationTimestamp),
-							Labels: model_chaos_experiment.ChaosExperimentLabels{
-								InfraID:              em.Metadata.Labels.InfraID,
-								RevisionID:           em.Metadata.Labels.RevisionID,
-								WorkflowID:           em.Metadata.Labels.WorkflowID,
-								ControllerInstanceID: em.Metadata.Labels.WorkflowsArgoprojIoControllerInstanceid,
+						/*
+							Metadata: model_chaos_experiment.ChaosExperimentMetadata{
+								Name:              em.Metadata.Name,
+								CreationTimestamp: pc.getTimeFromMiliSecInt64(em.Metadata.CreationTimestamp),
+								Labels: model_chaos_experiment.ChaosExperimentLabels{
+									InfraID:              em.Metadata.Labels.InfraID,
+									RevisionID:           em.Metadata.Labels.RevisionID,
+									WorkflowID:           em.Metadata.Labels.WorkflowID,
+									ControllerInstanceID: em.Metadata.Labels.WorkflowsArgoprojIoControllerInstanceid,
+								},
 							},
-						},
+						*/
 						Spec: model_chaos_experiment.ChaosExperimentSpec{
-							Templates: util.SliceMap(em.Spec.Templates, func(temp jsonfield.Template) model_chaos_experiment.ChaosExperimentTemplate {
+							Templates: util.SliceMap(em.Spec.Templates, func(temp argoworkflowstypes.Template) model_chaos_experiment.ChaosExperimentTemplate {
 								return model_chaos_experiment.ChaosExperimentTemplate{
 									Name: temp.Name,
 									Steps: model_chaos_experiment.ChaosExperimentSteps{
-										Name: func(steps jsonfield.Steps) string {
+										Name: func(steps argoworkflowstypes.Steps) string {
 											if len(steps) == 0 {
 												return ""
 											}
 											return steps[0][0].Name
 										}(temp.Steps),
-										Template: func(steps jsonfield.Steps) string {
+										Template: func(steps argoworkflowstypes.Steps) string {
 											if len(steps) == 0 {
 												return ""
 											}
@@ -207,7 +209,7 @@ func (pc PostgresConnector) SaveChaosExperiments(ctx context.Context, ces []chao
 							}),
 							Entrypoint: em.Spec.Entrypoint,
 							Arguments: model_chaos_experiment.ChaosExperimentArguments{
-								Parameters: util.SliceMap(em.Spec.Arguments.Parameters, func(param jsonfield.Parameter) model_chaos_experiment.ChaosExperimentParameter {
+								Parameters: util.SliceMap(em.Spec.Arguments.Parameters, func(param argoworkflowstypes.Parameter) model_chaos_experiment.ChaosExperimentParameter {
 									return model_chaos_experiment.ChaosExperimentParameter{
 										Name:  param.Name,
 										Value: param.Value,
@@ -387,9 +389,9 @@ func (pc PostgresConnector) getTimeFromIso8601String(iso8601Date string) *time.T
 	return &parsedTime
 }
 
-func (pc PostgresConnector) getChaosExperimentYamls(em *jsonfield.ExperimentManifest) []model_chaos_experiment_yaml.ChaosExperimentYaml {
+func (pc PostgresConnector) getChaosExperimentYamls(w *argoworkflowstypes.Workflow) []model_chaos_experiment_yaml.ChaosExperimentYaml {
 	var mces []model_chaos_experiment_yaml.ChaosExperimentYaml
-	for _, t := range em.Spec.Templates {
+	for _, t := range w.Spec.Templates {
 		if t.Name == "install-chaos-faults" {
 			for _, a := range t.Inputs.Artifacts {
 				ce, err := util.ParseChaosExperimentYaml(a.Raw.Data)
@@ -454,9 +456,9 @@ func (pc PostgresConnector) getChaosExperimentYamls(em *jsonfield.ExperimentMani
 	return mces
 }
 
-func (pc PostgresConnector) getChaosEngineYamls(em *jsonfield.ExperimentManifest) []model_chaos_engine_yaml.ChaosEngineYaml {
+func (pc PostgresConnector) getChaosEngineYamls(w *argoworkflowstypes.Workflow) []model_chaos_engine_yaml.ChaosEngineYaml {
 	var mces []model_chaos_engine_yaml.ChaosEngineYaml
-	for _, t := range em.Spec.Templates {
+	for _, t := range w.Spec.Templates {
 		if strings.Contains(t.Container.Image, "litmus-checker") {
 			for _, a := range t.Inputs.Artifacts {
 				ce, err := util.ParseChaosEngineYaml(a.Raw.Data)
