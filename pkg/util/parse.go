@@ -3,15 +3,15 @@ package util
 import (
 	"encoding/json"
 
-	litmus_v1alpha1 "github.com/litmuschaos/chaos-operator/api/litmuschaos/v1alpha1"
-	litmus_chaos_experiment_run "github.com/litmuschaos/litmus/chaoscenter/graphql/server/pkg/chaos_experiment_run"
-	mongodb_chaos_experiment "github.com/litmuschaos/litmus/chaoscenter/graphql/server/pkg/database/mongodb/chaos_experiment"
-	mongodb_chaos_experiment_run "github.com/litmuschaos/litmus/chaoscenter/graphql/server/pkg/database/mongodb/chaos_experiment_run"
+	typeslitmusk8s "github.com/litmuschaos/chaos-operator/api/litmuschaos/v1alpha1"
+	typeslitmuschaosexperimentrun "github.com/litmuschaos/litmus/chaoscenter/graphql/server/pkg/chaos_experiment_run"
+	typesmongodbchaosexperiment "github.com/litmuschaos/litmus/chaoscenter/graphql/server/pkg/database/mongodb/chaos_experiment"
+	typesmongodbchaosexperimentrun "github.com/litmuschaos/litmus/chaoscenter/graphql/server/pkg/database/mongodb/chaos_experiment_run"
 	typesargoworkflows "github.com/rogeriofbrito/litmus-exporter/pkg/types/argo-workflows"
 	"gopkg.in/yaml.v3"
 )
 
-func ParseExperimentManifests(rev mongodb_chaos_experiment.ExperimentRevision) (*typesargoworkflows.Workflow, error) {
+func ParseExperimentManifests(rev typesmongodbchaosexperiment.ExperimentRevision) (*typesargoworkflows.Workflow, error) {
 	w := &typesargoworkflows.Workflow{}
 	if err := json.Unmarshal([]byte(rev.ExperimentManifest), w); err != nil {
 		return nil, err
@@ -19,8 +19,8 @@ func ParseExperimentManifests(rev mongodb_chaos_experiment.ExperimentRevision) (
 	return w, nil
 }
 
-func ParseExecutionData(cer mongodb_chaos_experiment_run.ChaosExperimentRun) (*litmus_chaos_experiment_run.ExecutionData, error) {
-	ed := &litmus_chaos_experiment_run.ExecutionData{}
+func ParseExecutionData(cer typesmongodbchaosexperimentrun.ChaosExperimentRun) (*typeslitmuschaosexperimentrun.ExecutionData, error) {
+	ed := &typeslitmuschaosexperimentrun.ExecutionData{}
 	if err := json.Unmarshal([]byte(cer.ExecutionData), ed); err != nil {
 		return nil, err
 	}
@@ -28,13 +28,13 @@ func ParseExecutionData(cer mongodb_chaos_experiment_run.ChaosExperimentRun) (*l
 	return ed, nil
 }
 
-func ParseChaosExperimentYaml(yamlStr string) (*litmus_v1alpha1.ChaosExperiment, error) {
+func ParseChaosExperimentYaml(yamlStr string) (*typeslitmusk8s.ChaosExperiment, error) {
 	yamlData := []byte(yamlStr)
 	jsonData, err := yamlToJson(yamlData)
 	if err != nil {
 		return nil, err
 	}
-	var ce litmus_v1alpha1.ChaosExperiment
+	var ce typeslitmusk8s.ChaosExperiment
 	err = json.Unmarshal(jsonData, &ce)
 	if err != nil {
 		panic(err)
@@ -42,13 +42,13 @@ func ParseChaosExperimentYaml(yamlStr string) (*litmus_v1alpha1.ChaosExperiment,
 	return &ce, nil
 }
 
-func ParseChaosEngineYaml(yamlStr string) (*litmus_v1alpha1.ChaosEngine, error) {
+func ParseChaosEngineYaml(yamlStr string) (*typeslitmusk8s.ChaosEngine, error) {
 	yamlData := []byte(yamlStr)
 	jsonData, err := yamlToJson(yamlData)
 	if err != nil {
 		return nil, err
 	}
-	var ce litmus_v1alpha1.ChaosEngine
+	var ce typeslitmusk8s.ChaosEngine
 	err = json.Unmarshal(jsonData, &ce)
 	if err != nil {
 		panic(err)

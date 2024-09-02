@@ -8,11 +8,11 @@ import (
 	"strings"
 	"time"
 
-	"github.com/litmuschaos/chaos-operator/api/litmuschaos/v1alpha1" //TODO: rename import
-	litmus_chaos_experiment_run "github.com/litmuschaos/litmus/chaoscenter/graphql/server/pkg/chaos_experiment_run"
-	"github.com/litmuschaos/litmus/chaoscenter/graphql/server/pkg/database/mongodb/chaos_experiment"     //TODO: rename import
-	"github.com/litmuschaos/litmus/chaoscenter/graphql/server/pkg/database/mongodb/chaos_experiment_run" //TODO: rename import
-	"github.com/litmuschaos/litmus/chaoscenter/graphql/server/pkg/database/mongodb/project"              //TODO: rename import
+	typeslitmusk8s "github.com/litmuschaos/chaos-operator/api/litmuschaos/v1alpha1"
+	typeslitmuschaosexperimentrun "github.com/litmuschaos/litmus/chaoscenter/graphql/server/pkg/chaos_experiment_run"
+	typesmongodbchaosexperiment "github.com/litmuschaos/litmus/chaoscenter/graphql/server/pkg/database/mongodb/chaos_experiment"
+	typesmongodbchaosexperimentrun "github.com/litmuschaos/litmus/chaoscenter/graphql/server/pkg/database/mongodb/chaos_experiment_run"
+	typesmongodbproject "github.com/litmuschaos/litmus/chaoscenter/graphql/server/pkg/database/mongodb/project"
 	typesargoworkflows "github.com/rogeriofbrito/litmus-exporter/pkg/types/argo-workflows"
 	typespostgreschaosengineyaml "github.com/rogeriofbrito/litmus-exporter/pkg/types/postgres/chaos-engine-yaml"
 	typespostgreschaosexperiment "github.com/rogeriofbrito/litmus-exporter/pkg/types/postgres/chaos-experiment"
@@ -103,19 +103,19 @@ func (pc PostgresConnector) Init(ctx context.Context) error {
 	return nil
 }
 
-func (pc PostgresConnector) SaveProjects(ctx context.Context, projs []project.Project) error {
+func (pc PostgresConnector) SaveProjects(ctx context.Context, projs []typesmongodbproject.Project) error {
 	db, err := pc.getGormDB()
 	if err != nil {
 		return err
 	}
 
-	pms := util.SliceMap(projs, func(p project.Project) typespostgresproject.Project {
+	pms := util.SliceMap(projs, func(p typesmongodbproject.Project) typespostgresproject.Project {
 		return typespostgresproject.Project{
 			UpdatedAt: pc.getTimeFromMiliSecInt64(p.UpdatedAt),
 			CreatedAt: pc.getTimeFromMiliSecInt64(p.CreatedAt),
 			IsRemoved: p.IsRemoved,
 			Name:      p.Name,
-			Members: util.SliceMap(p.Members, func(m *project.Member) typespostgresproject.ProjectMembers {
+			Members: util.SliceMap(p.Members, func(m *typesmongodbproject.Member) typespostgresproject.ProjectMembers {
 				return typespostgresproject.ProjectMembers{
 					Role:       string(m.Role),
 					Invitation: string(m.Invitation),
@@ -133,13 +133,13 @@ func (pc PostgresConnector) SaveProjects(ctx context.Context, projs []project.Pr
 	return nil
 }
 
-func (pc PostgresConnector) SaveChaosExperiments(ctx context.Context, ces []chaos_experiment.ChaosExperimentRequest) error {
+func (pc PostgresConnector) SaveChaosExperiments(ctx context.Context, ces []typesmongodbchaosexperiment.ChaosExperimentRequest) error {
 	db, err := pc.getGormDB()
 	if err != nil {
 		return err
 	}
 
-	cems := util.SliceMap(ces, func(ce chaos_experiment.ChaosExperimentRequest) typespostgreschaosexperiment.ChaosExperiment {
+	cems := util.SliceMap(ces, func(ce typesmongodbchaosexperiment.ChaosExperimentRequest) typespostgreschaosexperiment.ChaosExperiment {
 		return typespostgreschaosexperiment.ChaosExperiment{
 			Name:           ce.Name,
 			Description:    ce.Description,
@@ -154,7 +154,7 @@ func (pc PostgresConnector) SaveChaosExperiments(ctx context.Context, ces []chao
 			CronSyntax:     ce.CronSyntax,
 			InfraID:        ce.InfraID,
 			ExperimentType: string(ce.ExperimentType),
-			Revision: util.SliceMap(ce.Revision, func(rev chaos_experiment.ExperimentRevision) typespostgreschaosexperiment.ChaosExperimentRevision {
+			Revision: util.SliceMap(ce.Revision, func(rev typesmongodbchaosexperiment.ExperimentRevision) typespostgreschaosexperiment.ChaosExperimentRevision {
 				w, err := util.ParseExperimentManifests(rev)
 				if err != nil {
 					panic(err)
@@ -228,7 +228,7 @@ func (pc PostgresConnector) SaveChaosExperiments(ctx context.Context, ces []chao
 				}
 			}),
 			IsCustomExperiment: ce.IsCustomExperiment,
-			RecentExperimentRunDetails: util.SliceMap(ce.RecentExperimentRunDetails, func(detail chaos_experiment.ExperimentRunDetail) typespostgreschaosexperiment.ChaosExperimentRecentExperimentRunDetail {
+			RecentExperimentRunDetails: util.SliceMap(ce.RecentExperimentRunDetails, func(detail typesmongodbchaosexperiment.ExperimentRunDetail) typespostgreschaosexperiment.ChaosExperimentRecentExperimentRunDetail {
 				return typespostgreschaosexperiment.ChaosExperimentRecentExperimentRunDetail{
 					UpdatedAt:       pc.getTimeFromMiliSecInt64(detail.UpdatedAt),
 					CreatedAt:       pc.getTimeFromMiliSecInt64(detail.CreatedAt),
@@ -241,7 +241,7 @@ func (pc PostgresConnector) SaveChaosExperiments(ctx context.Context, ces []chao
 					NotifyID:        detail.NotifyID,
 					Completed:       detail.Completed,
 					RunSequence:     detail.RunSequence,
-					Probes: util.SliceMap(detail.Probe, func(probe chaos_experiment.Probes) typespostgreschaosexperiment.ChaosExperimentProbe {
+					Probes: util.SliceMap(detail.Probe, func(probe typesmongodbchaosexperiment.Probes) typespostgreschaosexperiment.ChaosExperimentProbe {
 						return typespostgreschaosexperiment.ChaosExperimentProbe{
 							FaultName:  probe.FaultName,
 							ProbeNames: strings.Join(probe.ProbeNames, ","),
@@ -261,13 +261,13 @@ func (pc PostgresConnector) SaveChaosExperiments(ctx context.Context, ces []chao
 	return nil
 }
 
-func (pc PostgresConnector) SaveChaosExperimentRuns(ctx context.Context, cers []chaos_experiment_run.ChaosExperimentRun) error {
+func (pc PostgresConnector) SaveChaosExperimentRuns(ctx context.Context, cers []typesmongodbchaosexperimentrun.ChaosExperimentRun) error {
 	db, err := pc.getGormDB()
 	if err != nil {
 		return err
 	}
 
-	cerms := util.SliceMap(cers, func(cer chaos_experiment_run.ChaosExperimentRun) typespostgreschaosexperimentrun.ChaosExperimentRun {
+	cerms := util.SliceMap(cers, func(cer typesmongodbchaosexperimentrun.ChaosExperimentRun) typespostgreschaosexperimentrun.ChaosExperimentRun {
 		ed, err := util.ParseExecutionData(cer)
 		if err != nil {
 			panic(err)
@@ -285,7 +285,7 @@ func (pc PostgresConnector) SaveChaosExperimentRuns(ctx context.Context, cers []
 			ExperimentID:    cer.ExperimentID,
 			ExperimentName:  cer.ExperimentName,
 			Phase:           cer.Phase,
-			Probes: util.SliceMap(cer.Probes, func(probe chaos_experiment_run.Probes) typespostgreschaosexperimentrun.ChaosExperimentRunProbe {
+			Probes: util.SliceMap(cer.Probes, func(probe typesmongodbchaosexperimentrun.Probes) typespostgreschaosexperimentrun.ChaosExperimentRunProbe {
 				return typespostgreschaosexperimentrun.ChaosExperimentRunProbe{
 					FaultName:  probe.FaultName,
 					ProbeNames: strings.Join(probe.ProbeNames, ","),
@@ -444,7 +444,7 @@ func (pc PostgresConnector) getChaosEngineYamls(w *typesargoworkflows.Workflow) 
 							Appkind:  ce.Spec.Appinfo.AppKind,
 						},
 						ChaosServiceAccount: ce.Spec.ChaosServiceAccount,
-						Experiments: util.SliceMap(ce.Spec.Experiments, func(exp v1alpha1.ExperimentList) typespostgreschaosengineyaml.ChaosEngineYamlExperiment {
+						Experiments: util.SliceMap(ce.Spec.Experiments, func(exp typeslitmusk8s.ExperimentList) typespostgreschaosengineyaml.ChaosEngineYamlExperiment {
 							return typespostgreschaosengineyaml.ChaosEngineYamlExperiment{
 								Name: exp.Name,
 								Spec: typespostgreschaosengineyaml.ChaosEngineYamlExperimentSpec{
@@ -467,7 +467,7 @@ func (pc PostgresConnector) getChaosEngineYamls(w *typesargoworkflows.Workflow) 
 	return mces
 }
 
-func (pc PostgresConnector) getNodes(cerns map[string]litmus_chaos_experiment_run.Node) []typespostgreschaosexperimentrun.ChaosExperimentRunNode {
+func (pc PostgresConnector) getNodes(cerns map[string]typeslitmuschaosexperimentrun.Node) []typespostgreschaosexperimentrun.ChaosExperimentRunNode {
 	var mcerns []typespostgreschaosexperimentrun.ChaosExperimentRunNode
 	for name, cern := range cerns {
 		mcerns = append(mcerns, typespostgreschaosexperimentrun.ChaosExperimentRunNode{
@@ -479,7 +479,7 @@ func (pc PostgresConnector) getNodes(cerns map[string]litmus_chaos_experiment_ru
 			FinishedAt: pc.getTimeFromSecString(cern.FinishedAt),
 			Children:   strings.Join(cern.Children, ","),
 			Type:       cern.Type,
-			ChaosData: func(cern litmus_chaos_experiment_run.Node) *typespostgreschaosexperimentrun.ChaosExperimentRunChaosData {
+			ChaosData: func(cern typeslitmuschaosexperimentrun.Node) *typespostgreschaosexperimentrun.ChaosExperimentRunChaosData {
 				if cern.ChaosExp == nil {
 					return nil
 				}
@@ -530,7 +530,7 @@ func (pc PostgresConnector) getNodes(cerns map[string]litmus_chaos_experiment_ru
 								Verdict:                string(cern.ChaosExp.ChaosResult.Status.ExperimentStatus.Verdict),
 								ProbeSuccessPercentage: cern.ChaosExp.ChaosResult.Status.ExperimentStatus.ProbeSuccessPercentage,
 							},
-							ProbeStatuses: util.SliceMap(cern.ChaosExp.ChaosResult.Status.ProbeStatuses, func(probeStatus v1alpha1.ProbeStatuses) typespostgreschaosexperimentrun.ChaosExperimentRunProbeStatus {
+							ProbeStatuses: util.SliceMap(cern.ChaosExp.ChaosResult.Status.ProbeStatuses, func(probeStatus typeslitmusk8s.ProbeStatuses) typespostgreschaosexperimentrun.ChaosExperimentRunProbeStatus {
 								return typespostgreschaosexperimentrun.ChaosExperimentRunProbeStatus{
 									Name: probeStatus.Name,
 									Type: probeStatus.Type,
@@ -545,7 +545,7 @@ func (pc PostgresConnector) getNodes(cerns map[string]litmus_chaos_experiment_ru
 								PassedRuns:  cern.ChaosExp.ChaosResult.Status.History.PassedRuns,
 								FailedRuns:  cern.ChaosExp.ChaosResult.Status.History.FailedRuns,
 								StoppedRuns: cern.ChaosExp.ChaosResult.Status.History.StoppedRuns,
-								Targets: util.SliceMap(cern.ChaosExp.ChaosResult.Status.History.Targets, func(target v1alpha1.TargetDetails) typespostgreschaosexperimentrun.ChaosExperimentRunHistoryTarget {
+								Targets: util.SliceMap(cern.ChaosExp.ChaosResult.Status.History.Targets, func(target typeslitmusk8s.TargetDetails) typespostgreschaosexperimentrun.ChaosExperimentRunHistoryTarget {
 									return typespostgreschaosexperimentrun.ChaosExperimentRunHistoryTarget{
 										Name:        target.Name,
 										Kind:        target.Kind,
