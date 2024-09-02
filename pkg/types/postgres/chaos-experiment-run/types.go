@@ -7,12 +7,12 @@ import (
 )
 
 type ChaosExperimentRun struct {
-	ID        uuid.UUID  `gorm:"column:id;type:uuid;default:uuid_generate_v4();primaryKey"`
-	ProjectID string     `gorm:"column:project_id"`
-	UpdatedAt *time.Time `gorm:"column:updated_at"`
-	CreatedAt *time.Time `gorm:"column:created_at"`
-	//CreatedBy        User
-	//UpdatedBy        User
+	ID               uuid.UUID                       `gorm:"column:id;type:uuid;default:uuid_generate_v4();primaryKey"`
+	ProjectID        string                          `gorm:"column:project_id"`
+	UpdatedAt        *time.Time                      `gorm:"column:updated_at"`
+	CreatedAt        *time.Time                      `gorm:"column:created_at"`
+	CreatedBy        string                          `gorm:"column:created_by"`
+	UpdatedBy        string                          `gorm:"column:updated_by"`
 	IsRemoved        bool                            `gorm:"column:is_removed"`
 	InfraID          string                          `gorm:"column:infra_id"`
 	ExperimentRunID  string                          `gorm:"column:experiment_run_id"`

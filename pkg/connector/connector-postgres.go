@@ -44,7 +44,6 @@ func (pc PostgresConnector) Init(ctx context.Context) error {
 		&typespostgresproject.ProjectMembers{},
 		//ChaosExperiment
 		&typespostgreschaosexperiment.ChaosExperiment{},
-		&typespostgreschaosexperiment.User{},
 		&typespostgreschaosexperiment.ChaosExperimentRevision{},
 		&typespostgreschaosexperiment.ChaosExperimentManifest{},
 		&typespostgreschaosexperiment.ChaosExperimentMetadata{},
@@ -142,16 +141,13 @@ func (pc PostgresConnector) SaveChaosExperiments(ctx context.Context, ces []chao
 
 	cems := util.SliceMap(ces, func(ce chaos_experiment.ChaosExperimentRequest) typespostgreschaosexperiment.ChaosExperiment {
 		return typespostgreschaosexperiment.ChaosExperiment{
-			Name:        ce.Name,
-			Description: ce.Description,
-			Tags:        strings.Join(ce.Tags, ","),
-			UpdatedAt:   pc.getTimeFromMiliSecInt64(ce.UpdatedAt),
-			CreatedAt:   pc.getTimeFromMiliSecInt64(ce.CreatedAt),
-			/*UpdatedBy: typespostgreschaosexperiment.User{
-				UserID:   ce.UpdatedBy.UserID,
-				UserName: ce.UpdatedBy.UserName,
-				Email:    ce.UpdatedBy.Email,
-			},*/
+			Name:           ce.Name,
+			Description:    ce.Description,
+			Tags:           strings.Join(ce.Tags, ","),
+			UpdatedAt:      pc.getTimeFromMiliSecInt64(ce.UpdatedAt),
+			CreatedAt:      pc.getTimeFromMiliSecInt64(ce.CreatedAt),
+			CreatedBy:      ce.CreatedBy.Username,
+			UpdatedBy:      ce.UpdatedBy.Username,
 			IsRemoved:      ce.IsRemoved,
 			ProjectID:      ce.ProjectID,
 			ExperimentID:   ce.ExperimentID,
@@ -234,18 +230,10 @@ func (pc PostgresConnector) SaveChaosExperiments(ctx context.Context, ces []chao
 			IsCustomExperiment: ce.IsCustomExperiment,
 			RecentExperimentRunDetails: util.SliceMap(ce.RecentExperimentRunDetails, func(detail chaos_experiment.ExperimentRunDetail) typespostgreschaosexperiment.ChaosExperimentRecentExperimentRunDetail {
 				return typespostgreschaosexperiment.ChaosExperimentRecentExperimentRunDetail{
-					UpdatedAt: pc.getTimeFromMiliSecInt64(detail.UpdatedAt),
-					CreatedAt: pc.getTimeFromMiliSecInt64(detail.CreatedAt),
-					/*CreatedBy: typespostgreschaosexperiment.User{
-						UserID:   ci.CreatedBy.UserID,
-						UserName: ci.CreatedBy.UserName,
-						Email:    ci.CreatedBy.Email,
-					},
-					UpdatedBy: typespostgreschaosexperiment.User{
-						UserID:   ci.UpdatedBy.UserID,
-						UserName: ci.UpdatedBy.UserName,
-						Email:    ci.UpdatedBy.Email,
-					},*/
+					UpdatedAt:       pc.getTimeFromMiliSecInt64(detail.UpdatedAt),
+					CreatedAt:       pc.getTimeFromMiliSecInt64(detail.CreatedAt),
+					CreatedBy:       detail.CreatedBy.Username,
+					UpdatedBy:       detail.UpdatedBy.Username,
 					IsRemoved:       detail.IsRemoved,
 					ProjectID:       detail.ProjectID,
 					ExperimentRunID: detail.ExperimentRunID,
@@ -286,19 +274,11 @@ func (pc PostgresConnector) SaveChaosExperimentRuns(ctx context.Context, cers []
 		}
 
 		return typespostgreschaosexperimentrun.ChaosExperimentRun{
-			ProjectID: cer.ProjectID,
-			UpdatedAt: pc.getTimeFromMiliSecInt64(cer.UpdatedAt),
-			CreatedAt: pc.getTimeFromMiliSecInt64(cer.CreatedAt),
-			/*CreatedBy: typespostgreschaosexperiment.User{
-				UserID:   ci.CreatedBy.UserID,
-				UserName: ci.CreatedBy.UserName,
-				Email:    ci.CreatedBy.Email,
-			},
-			UpdatedBy: typespostgreschaosexperiment.User{
-				UserID:   ci.UpdatedBy.UserID,
-				UserName: ci.UpdatedBy.UserName,
-				Email:    ci.UpdatedBy.Email,
-			},*/
+			ProjectID:       cer.ProjectID,
+			UpdatedAt:       pc.getTimeFromMiliSecInt64(cer.UpdatedAt),
+			CreatedAt:       pc.getTimeFromMiliSecInt64(cer.CreatedAt),
+			CreatedBy:       cer.CreatedBy.Username,
+			UpdatedBy:       cer.UpdatedBy.Username,
 			IsRemoved:       cer.IsRemoved,
 			InfraID:         cer.InfraID,
 			ExperimentRunID: cer.ExperimentRunID,

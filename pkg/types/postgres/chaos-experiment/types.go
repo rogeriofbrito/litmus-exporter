@@ -9,14 +9,14 @@ import (
 )
 
 type ChaosExperiment struct {
-	ID          uuid.UUID  `gorm:"column:id;type:uuid;default:uuid_generate_v4();primaryKey"`
-	Name        string     `gorm:"column:name"`
-	Description string     `gorm:"column:description"`
-	Tags        string     `gorm:"column:tags"`
-	UpdatedAt   *time.Time `gorm:"column:updated_at"`
-	CreatedAt   *time.Time `gorm:"column:created_at"`
-	//CreatedBy                  User                              `gorm:"constraint:OnUpdate:CASCADE,OnDelete:CASCADE;foreignKey:id"`
-	//UpdatedBy                  User                              `gorm:"constraint:OnUpdate:CASCADE,OnDelete:CASCADE;foreignKey:id"`
+	ID                         uuid.UUID                                  `gorm:"column:id;type:uuid;default:uuid_generate_v4();primaryKey"`
+	Name                       string                                     `gorm:"column:name"`
+	Description                string                                     `gorm:"column:description"`
+	Tags                       string                                     `gorm:"column:tags"`
+	UpdatedAt                  *time.Time                                 `gorm:"column:updated_at"`
+	CreatedAt                  *time.Time                                 `gorm:"column:created_at"`
+	CreatedBy                  string                                     `gorm:"column:created_by"`
+	UpdatedBy                  string                                     `gorm:"column:updated_by"`
 	IsRemoved                  bool                                       `gorm:"column:is_removed"`
 	ProjectID                  string                                     `gorm:"column:project_id"`
 	ExperimentID               string                                     `gorm:"column:experiment_id"`
@@ -27,13 +27,6 @@ type ChaosExperiment struct {
 	IsCustomExperiment         bool                                       `gorm:"column:is_custom_experiment"`
 	RecentExperimentRunDetails []ChaosExperimentRecentExperimentRunDetail `gorm:"foreignKey:experiment_id"`
 	TotalExperimentRuns        int                                        `gorm:"column:total_experiment_runs"`
-}
-
-type User struct {
-	ID       uuid.UUID `gorm:"column:id;type:uuid;default:uuid_generate_v4();primaryKey"`
-	UserID   string    `gorm:"column:user_id"`
-	UserName string    `gorm:"column:username"`
-	Email    string    `gorm:"column:email"`
 }
 
 type ChaosExperimentRevision struct {
@@ -141,12 +134,12 @@ type ChaosExperimentStatus struct {
 }
 
 type ChaosExperimentRecentExperimentRunDetail struct {
-	ID           uuid.UUID  `gorm:"column:id;type:uuid;default:uuid_generate_v4();primaryKey"`
-	ExperimentID uuid.UUID  `gorm:"column:experiment_id"`
-	UpdatedAt    *time.Time `gorm:"column:updated_at"`
-	CreatedAt    *time.Time `gorm:"column:created_at"`
-	//CreatedBy       User      `gorm:"constraint:OnUpdate:CASCADE,OnDelete:CASCADE;foreignKey:id"`
-	//UpdatedBy       User      `gorm:"constraint:OnUpdate:CASCADE,OnDelete:CASCADE;foreignKey:id"`
+	ID              uuid.UUID              `gorm:"column:id;type:uuid;default:uuid_generate_v4();primaryKey"`
+	ExperimentID    uuid.UUID              `gorm:"column:experiment_id"`
+	UpdatedAt       *time.Time             `gorm:"column:updated_at"`
+	CreatedAt       *time.Time             `gorm:"column:created_at"`
+	CreatedBy       string                 `gorm:"column:created_by"`
+	UpdatedBy       string                 `gorm:"column:updated_by"`
 	IsRemoved       bool                   `gorm:"column:is_removed"`
 	ProjectID       string                 `gorm:"column:project_id"`
 	ExperimentRunID string                 `gorm:"column:experiment_run_id"`
