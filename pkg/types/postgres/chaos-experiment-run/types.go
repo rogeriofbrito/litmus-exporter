@@ -19,7 +19,7 @@ type ChaosExperimentRun struct {
 	ExperimentID     string                          `gorm:"column:experiment_id"`
 	ExperimentName   string                          `gorm:"column:experiment_name"`
 	Phase            string                          `gorm:"column:phase"`
-	Probes           []ChaosExperimentRunProbe       `gorm:"foreignKey:chaos_experiment_run_id"`
+	Probes           []ChaosExperimentRunProbe       `gorm:"constraint:OnUpdate:CASCADE,OnDelete:CASCADE;foreignKey:chaos_experiment_run_id"`
 	ExecutionDataStr string                          `gorm:"column:execution_data"`
 	ExecutionData    ChaosExperimentRunExecutionData `gorm:"constraint:OnUpdate:CASCADE,OnDelete:CASCADE;foreignKey:chaos_experiment_run_id"`
 	RevisionID       string                          `gorm:"column:revision_id"`
@@ -57,7 +57,7 @@ type ChaosExperimentRunExecutionData struct {
 	Message              string                   `gorm:"column:message"`
 	StartedAt            *time.Time               `gorm:"column:started_at"`
 	FinishedAt           *time.Time               `gorm:"column:finished_at"`
-	Nodes                []ChaosExperimentRunNode `gorm:"foreignKey:execution_data_id"`
+	Nodes                []ChaosExperimentRunNode `gorm:"constraint:OnUpdate:CASCADE,OnDelete:CASCADE;foreignKey:execution_data_id"`
 }
 
 type ChaosExperimentRunNode struct {
@@ -123,7 +123,7 @@ type ChaosExperimentRunStatus struct {
 	ID               uuid.UUID                          `gorm:"column:id;type:uuid;default:uuid_generate_v4();primaryKey"`
 	ChaosResultID    uuid.UUID                          `gorm:"column:chaos_result_id"`
 	ExperimentStatus ChaosExperimentRunExperimentStatus `gorm:"constraint:OnUpdate:CASCADE,OnDelete:CASCADE;foreignKey:status_id"`
-	ProbeStatuses    []ChaosExperimentRunProbeStatus    `gorm:"foreignKey:status_id"`
+	ProbeStatuses    []ChaosExperimentRunProbeStatus    `gorm:"constraint:OnUpdate:CASCADE,OnDelete:CASCADE;foreignKey:status_id"`
 	History          ChaosExperimentRunHistory          `gorm:"constraint:OnUpdate:CASCADE,OnDelete:CASCADE;foreignKey:status_id"`
 }
 

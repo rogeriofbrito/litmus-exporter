@@ -26,7 +26,7 @@ type ChaosEngineYamlSpec struct {
 	EngineState         string                      `gorm:"column:engine_state"`
 	Appinfo             ChaosEngineYamlAppInfo      `gorm:"constraint:OnUpdate:CASCADE,OnDelete:CASCADE;foreignKey:spec_id"`
 	ChaosServiceAccount string                      `gorm:"column:chaos_service_account"`
-	Experiments         []ChaosEngineYamlExperiment `gorm:"foreignKey:spec_id"`
+	Experiments         []ChaosEngineYamlExperiment `gorm:"constraint:OnUpdate:CASCADE,OnDelete:CASCADE;foreignKey:spec_id"`
 }
 
 type ChaosEngineYamlLabels struct {
@@ -66,7 +66,7 @@ type ChaosEngineYamlExperimentSpec struct {
 type ChaosEngineYamlCompoments struct {
 	ID               uuid.UUID            `gorm:"column:id;type:uuid;default:uuid_generate_v4();primaryKey"`
 	ExperimentSpecID uuid.UUID            `gorm:"column:experiment_spec_id"`
-	Env              []ChaosEngineYamlEnv `gorm:"foreignKey:components_id"`
+	Env              []ChaosEngineYamlEnv `gorm:"constraint:OnUpdate:CASCADE,OnDelete:CASCADE;foreignKey:components_id"`
 }
 
 type ChaosEngineYamlEnv struct {

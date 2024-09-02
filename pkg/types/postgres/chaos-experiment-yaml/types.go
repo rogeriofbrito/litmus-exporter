@@ -37,12 +37,12 @@ type ChaosExperimentYamlDefinition struct {
 	ID              uuid.UUID                           `gorm:"column:id;type:uuid;default:uuid_generate_v4();primaryKey"`
 	SpecID          uuid.UUID                           `gorm:"column:spec_id"`
 	Scope           string                              `gorm:"column:scope"`
-	Permissions     []ChaosExperimentYamlPermission     `gorm:"foreignKey:definition_id"`
+	Permissions     []ChaosExperimentYamlPermission     `gorm:"constraint:OnUpdate:CASCADE,OnDelete:CASCADE;foreignKey:definition_id"`
 	Image           string                              `gorm:"column:image"`
 	ImagePullPolicy string                              `gorm:"column:image_pull_policy"`
 	Args            string                              `gorm:"column:args"`
 	Command         string                              `gorm:"column:command"`
-	Env             []ChaosExperimentYamlEnv            `gorm:"foreignKey:definition_id"`
+	Env             []ChaosExperimentYamlEnv            `gorm:"constraint:OnUpdate:CASCADE,OnDelete:CASCADE;foreignKey:definition_id"`
 	Labels          ChaosExperimentYamlDefinitionLabels `gorm:"constraint:OnUpdate:CASCADE,OnDelete:CASCADE;foreignKey:definition_id"`
 }
 

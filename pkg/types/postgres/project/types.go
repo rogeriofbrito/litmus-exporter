@@ -14,7 +14,7 @@ type Project struct {
 	UpdatedBy string           `gorm:"column:updated_by"`
 	IsRemoved bool             `gorm:"column:is_removed"`
 	Name      string           `gorm:"column:name"`
-	Members   []ProjectMembers `gorm:"foreignKey:project_id"`
+	Members   []ProjectMembers `gorm:"constraint:OnUpdate:CASCADE,OnDelete:CASCADE;foreignKey:project_id"`
 	State     *string          `gorm:"column:state"`
 }
 

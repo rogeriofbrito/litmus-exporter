@@ -23,9 +23,9 @@ type ChaosExperiment struct {
 	CronSyntax                 string                                     `gorm:"column:cron_syntax"`
 	InfraID                    string                                     `gorm:"column:infra_id"`
 	ExperimentType             string                                     `gorm:"column:experiment_type"`
-	Revision                   []ChaosExperimentRevision                  `gorm:"foreignKey:experiment_id"`
+	Revision                   []ChaosExperimentRevision                  `gorm:"constraint:OnUpdate:CASCADE,OnDelete:CASCADE;foreignKey:experiment_id"`
 	IsCustomExperiment         bool                                       `gorm:"column:is_custom_experiment"`
-	RecentExperimentRunDetails []ChaosExperimentRecentExperimentRunDetail `gorm:"foreignKey:experiment_id"`
+	RecentExperimentRunDetails []ChaosExperimentRecentExperimentRunDetail `gorm:"constraint:OnUpdate:CASCADE,OnDelete:CASCADE;foreignKey:experiment_id"`
 	TotalExperimentRuns        int                                        `gorm:"column:total_experiment_runs"`
 }
 
@@ -34,8 +34,8 @@ type ChaosExperimentRevision struct {
 	ExperimentID         uuid.UUID                                         `gorm:"column:experiment_id"`
 	RevisionID           string                                            `gorm:"column:revision_id"`
 	ExperimentManifest   ChaosExperimentManifest                           `gorm:"constraint:OnUpdate:CASCADE,OnDelete:CASCADE;foreignKey:revision_id"`
-	ChaosExperimentYamls []model_chaos_experiment_yaml.ChaosExperimentYaml `gorm:"foreignKey:revision_id"`
-	ChaosEngineYamls     []model_chaos_engine_yaml.ChaosEngineYaml         `gorm:"foreignKey:revision_id"`
+	ChaosExperimentYamls []model_chaos_experiment_yaml.ChaosExperimentYaml `gorm:"constraint:OnUpdate:CASCADE,OnDelete:CASCADE;foreignKey:revision_id"`
+	ChaosEngineYamls     []model_chaos_engine_yaml.ChaosEngineYaml         `gorm:"constraint:OnUpdate:CASCADE,OnDelete:CASCADE;foreignKey:revision_id"`
 }
 
 type ChaosExperimentManifest struct {
@@ -68,7 +68,7 @@ type ChaosExperimentLabels struct {
 type ChaosExperimentSpec struct {
 	ID                 uuid.UUID                      `gorm:"column:id;type:uuid;default:uuid_generate_v4();primaryKey"`
 	ManifestID         uuid.UUID                      `gorm:"column:manifest_id"`
-	Templates          []ChaosExperimentTemplate      `gorm:"foreignKey:spec_id"`
+	Templates          []ChaosExperimentTemplate      `gorm:"constraint:OnUpdate:CASCADE,OnDelete:CASCADE;foreignKey:spec_id"`
 	Entrypoint         string                         `gorm:"column:entrypoint"`
 	Arguments          ChaosExperimentArguments       `gorm:"constraint:OnUpdate:CASCADE,OnDelete:CASCADE;foreignKey:spec_id"`
 	ServiceAccountName string                         `gorm:"column:serviceAccountName"`
@@ -103,7 +103,7 @@ type ChaosExperimentContainer struct {
 type ChaosExperimentArguments struct {
 	ID         uuid.UUID                  `gorm:"column:id;type:uuid;default:uuid_generate_v4();primaryKey"`
 	SpecID     uuid.UUID                  `gorm:"column:spec_id"`
-	Parameters []ChaosExperimentParameter `gorm:"foreignKey:arguments_id"`
+	Parameters []ChaosExperimentParameter `gorm:"constraint:OnUpdate:CASCADE,OnDelete:CASCADE;foreignKey:arguments_id"`
 }
 
 type ChaosExperimentParameter struct {
@@ -147,7 +147,7 @@ type ChaosExperimentRecentExperimentRunDetail struct {
 	NotifyID        *string                `gorm:"column:notify_id"`
 	Completed       bool                   `gorm:"column:completed"`
 	RunSequence     int                    `gorm:"column:run_sequence"`
-	Probes          []ChaosExperimentProbe `gorm:"foreignKey:recent_run_details_id"`
+	Probes          []ChaosExperimentProbe `gorm:"constraint:OnUpdate:CASCADE,OnDelete:CASCADE;foreignKey:recent_run_details_id"`
 	ResiliencyScore *float64               `gorm:"column:resiliency_score"`
 }
 
