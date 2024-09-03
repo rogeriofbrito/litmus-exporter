@@ -46,7 +46,7 @@ func (pc PostgresConnector) Begin(ctx context.Context) error {
 		return err
 	}
 
-	return tx.AutoMigrate(
+	err = tx.AutoMigrate(
 		//Project
 		&typespostgresproject.Project{},
 		&typespostgresproject.ProjectMembers{},
@@ -104,6 +104,24 @@ func (pc PostgresConnector) Begin(ctx context.Context) error {
 		&typespostgreschaosexperimentrun.ChaosExperimentRunProbeStatusesStatus{},
 		&typespostgreschaosexperimentrun.ChaosExperimentRunHistoryTarget{},
 	)
+
+	if err != nil {
+		return err
+	}
+
+	if tx.Where("1 = 1").Delete(&typespostgresproject.Project{}).Error != nil {
+		return nil
+	}
+
+	if tx.Where("1 = 1").Delete(&typespostgreschaosexperiment.ChaosExperiment{}).Error != nil {
+		return nil
+	}
+
+	if tx.Where("1 = 1").Delete(&typespostgreschaosexperimentrun.ChaosExperimentRun{}).Error != nil {
+		return nil
+	}
+
+	return nil
 }
 
 func (pc PostgresConnector) Commit(ctx context.Context) error {
