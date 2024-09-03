@@ -9,7 +9,10 @@ import (
 )
 
 type IConnector interface {
-	Init(ctx context.Context) error
+	InitCtx(ctx context.Context) (context.Context, error)
+	Begin(ctx context.Context) error
+	Commit(ctx context.Context) error
+	Rollback(ctx context.Context) error
 	SaveProjects(ctx context.Context, projs []project.Project) error
 	SaveChaosExperiments(ctx context.Context, ces []chaos_experiment.ChaosExperimentRequest) error
 	SaveChaosExperimentRuns(ctx context.Context, cers []chaos_experiment_run.ChaosExperimentRun) error

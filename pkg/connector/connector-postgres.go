@@ -3,7 +3,6 @@ package connector
 import (
 	"context"
 	"fmt"
-	"os"
 	"strconv"
 	"strings"
 	"time"
@@ -20,25 +19,34 @@ import (
 	typespostgreschaosexperimentyaml "github.com/rogeriofbrito/litmus-exporter/pkg/types/postgres/chaos-experiment-yaml"
 	typespostgresproject "github.com/rogeriofbrito/litmus-exporter/pkg/types/postgres/project"
 	"github.com/rogeriofbrito/litmus-exporter/pkg/util"
-	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 	corev1 "k8s.io/api/core/v1"
 	rbacV1 "k8s.io/api/rbac/v1"
 )
 
-func NewPostgresConnector() *PostgresConnector {
-	return &PostgresConnector{}
+type ctxValue string
+
+func NewPostgresConnector(db *gorm.DB) *PostgresConnector {
+	return &PostgresConnector{
+		DB: db,
+	}
 }
 
-type PostgresConnector struct{}
+type PostgresConnector struct {
+	DB *gorm.DB
+}
 
-func (pc PostgresConnector) Init(ctx context.Context) error {
-	db, err := pc.getGormDB()
+func (pc PostgresConnector) InitCtx(ctx context.Context) (context.Context, error) {
+	return pc.getCtx(ctx)
+}
+
+func (pc PostgresConnector) Begin(ctx context.Context) error {
+	tx, err := pc.getTx(ctx)
 	if err != nil {
 		return err
 	}
 
-	err = db.AutoMigrate(
+	return tx.AutoMigrate(
 		//Project
 		&typespostgresproject.Project{},
 		&typespostgresproject.ProjectMembers{},
@@ -96,6 +104,29 @@ func (pc PostgresConnector) Init(ctx context.Context) error {
 		&typespostgreschaosexperimentrun.ChaosExperimentRunProbeStatusesStatus{},
 		&typespostgreschaosexperimentrun.ChaosExperimentRunHistoryTarget{},
 	)
+}
+
+func (pc PostgresConnector) Commit(ctx context.Context) error {
+	tx, err := pc.getTx(ctx)
+	if err != nil {
+		return err
+	}
+
+	err = tx.Commit().Error
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (pc PostgresConnector) Rollback(ctx context.Context) error {
+	tx, err := pc.getTx(ctx)
+	if err != nil {
+		return err
+	}
+
+	err = tx.Rollback().Error
 	if err != nil {
 		return err
 	}
@@ -104,7 +135,7 @@ func (pc PostgresConnector) Init(ctx context.Context) error {
 }
 
 func (pc PostgresConnector) SaveProjects(ctx context.Context, projs []typesmongodbproject.Project) error {
-	db, err := pc.getGormDB()
+	tx, err := pc.getTx(ctx)
 	if err != nil {
 		return err
 	}
@@ -127,14 +158,16 @@ func (pc PostgresConnector) SaveProjects(ctx context.Context, projs []typesmongo
 	})
 
 	for _, cem := range pms {
-		db.Save(&cem)
+		if err := tx.Save(&cem).Error; err != nil {
+			return err
+		}
 	}
 
 	return nil
 }
 
 func (pc PostgresConnector) SaveChaosExperiments(ctx context.Context, ces []typesmongodbchaosexperiment.ChaosExperimentRequest) error {
-	db, err := pc.getGormDB()
+	tx, err := pc.getTx(ctx)
 	if err != nil {
 		return err
 	}
@@ -255,14 +288,16 @@ func (pc PostgresConnector) SaveChaosExperiments(ctx context.Context, ces []type
 	})
 
 	for _, cem := range cems {
-		db.Save(&cem)
+		if err := tx.Save(&cem).Error; err != nil {
+			return err
+		}
 	}
 
 	return nil
 }
 
 func (pc PostgresConnector) SaveChaosExperimentRuns(ctx context.Context, cers []typesmongodbchaosexperimentrun.ChaosExperimentRun) error {
-	db, err := pc.getGormDB()
+	tx, err := pc.getTx(ctx)
 	if err != nil {
 		return err
 	}
@@ -321,21 +356,12 @@ func (pc PostgresConnector) SaveChaosExperimentRuns(ctx context.Context, cers []
 	})
 
 	for _, cerm := range cerms {
-		db.Save(&cerm)
+		if err := tx.Save(&cerm).Error; err != nil {
+			return err
+		}
 	}
 
 	return nil
-}
-
-func (pc PostgresConnector) getGormDB() (*gorm.DB, error) {
-	dsn := fmt.Sprintf("host=%s user=%s password=%s dbname=%s port=%s sslmode=%s",
-		os.Getenv("POSTGRES_HOST"),
-		os.Getenv("POSTGRES_USER"),
-		os.Getenv("POSTGRES_PASSWORD"),
-		os.Getenv("POSTGRES_DATABASE_NAME"),
-		os.Getenv("POSTGRES_PORT"),
-		os.Getenv("POSTGRES_SSL_MODE"))
-	return gorm.Open(postgres.Open(dsn), &gorm.Config{})
 }
 
 func (pc PostgresConnector) getTimeFromMiliSecInt64(t int64) *time.Time {
@@ -560,4 +586,22 @@ func (pc PostgresConnector) getNodes(cerns map[string]typeslitmuschaosexperiment
 		})
 	}
 	return mcerns
+}
+
+func (pc PostgresConnector) getCtx(ctx context.Context) (context.Context, error) {
+	tx := pc.DB.Begin()
+	if tx.Error != nil {
+		return nil, tx.Error
+	}
+
+	return context.WithValue(ctx, ctxValue("tx"), tx), nil
+}
+
+func (pc PostgresConnector) getTx(ctx context.Context) (*gorm.DB, error) {
+	tx := ctx.Value(ctxValue("tx"))
+	if tx == nil {
+		return nil, fmt.Errorf("tx not found in context")
+	}
+
+	return tx.(*gorm.DB), nil
 }
