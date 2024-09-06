@@ -540,65 +540,71 @@ func (pc PostgresConnector) getNodes(cerns map[string]typeslitmuschaosexperiment
 					RunnerPod:              cern.ChaosExp.RunnerPod,
 					ProbeSuccessPercentage: cern.ChaosExp.ProbeSuccessPercentage,
 					FailStep:               cern.ChaosExp.FailStep,
-					ChaosResult: typespostgreschaosexperimentrun.ChaosExperimentRunChaosResult{
-						Metadata: typespostgreschaosexperimentrun.ChaosExperimentRunMetadata{
-							Name:              cern.ChaosExp.ChaosResult.ObjectMeta.Name,
-							Namespace:         cern.ChaosExp.ChaosResult.ObjectMeta.Namespace,
-							UID:               string(cern.ChaosExp.ChaosResult.ObjectMeta.UID),
-							ResourceVersion:   cern.ChaosExp.ChaosResult.ObjectMeta.ResourceVersion,
-							Generation:        cern.ChaosExp.ChaosResult.ObjectMeta.Generation,
-							CreationTimestamp: &cern.ChaosExp.ChaosResult.ObjectMeta.CreationTimestamp.Time,
-							Labels: typespostgreschaosexperimentrun.ChaosExperimentRunLabels{
-								AppKubernetesIoComponent:       cern.ChaosExp.ChaosResult.ObjectMeta.Labels["app.kubernetes.io/component"],
-								AppKubernetesIoPartOf:          cern.ChaosExp.ChaosResult.ObjectMeta.Labels["app.kubernetes.io/part-of"],
-								AppKubernetesIoVersion:         cern.ChaosExp.ChaosResult.ObjectMeta.Labels["app.kubernetes.io/version"],
-								BatchKubernetesIoControllerUID: cern.ChaosExp.ChaosResult.ObjectMeta.Labels["batch.kubernetes.io/controller-uid"],
-								BatchKubernetesIoJobName:       cern.ChaosExp.ChaosResult.ObjectMeta.Labels["batch.kubernetes.io/job-name"],
-								ChaosUID:                       cern.ChaosExp.ChaosResult.ObjectMeta.Labels["chaosUID"],
-								ControllerUID:                  cern.ChaosExp.ChaosResult.ObjectMeta.Labels["controller-uid"],
-								InfraID:                        cern.ChaosExp.ChaosResult.ObjectMeta.Labels["infra_id"],
-								JobName:                        cern.ChaosExp.ChaosResult.ObjectMeta.Labels["job-name"],
-								Name:                           cern.ChaosExp.ChaosResult.ObjectMeta.Labels["name"],
-								StepPodName:                    cern.ChaosExp.ChaosResult.ObjectMeta.Labels["step_pod_name"],
-								WorkflowName:                   cern.ChaosExp.ChaosResult.ObjectMeta.Labels["workflow_name"],
-								WorkflowRunID:                  cern.ChaosExp.ChaosResult.ObjectMeta.Labels["workflow_run_id"],
+					ChaosResult: func(chaosResult *typeslitmusk8s.ChaosResult) typespostgreschaosexperimentrun.ChaosExperimentRunChaosResult {
+						if chaosResult == nil {
+							return typespostgreschaosexperimentrun.ChaosExperimentRunChaosResult{}
+						}
+
+						return typespostgreschaosexperimentrun.ChaosExperimentRunChaosResult{
+							Metadata: typespostgreschaosexperimentrun.ChaosExperimentRunMetadata{
+								Name:              chaosResult.ObjectMeta.Name,
+								Namespace:         chaosResult.ObjectMeta.Namespace,
+								UID:               string(chaosResult.ObjectMeta.UID),
+								ResourceVersion:   chaosResult.ObjectMeta.ResourceVersion,
+								Generation:        chaosResult.ObjectMeta.Generation,
+								CreationTimestamp: &chaosResult.ObjectMeta.CreationTimestamp.Time,
+								Labels: typespostgreschaosexperimentrun.ChaosExperimentRunLabels{
+									AppKubernetesIoComponent:       chaosResult.ObjectMeta.Labels["app.kubernetes.io/component"],
+									AppKubernetesIoPartOf:          chaosResult.ObjectMeta.Labels["app.kubernetes.io/part-of"],
+									AppKubernetesIoVersion:         chaosResult.ObjectMeta.Labels["app.kubernetes.io/version"],
+									BatchKubernetesIoControllerUID: chaosResult.ObjectMeta.Labels["batch.kubernetes.io/controller-uid"],
+									BatchKubernetesIoJobName:       chaosResult.ObjectMeta.Labels["batch.kubernetes.io/job-name"],
+									ChaosUID:                       chaosResult.ObjectMeta.Labels["chaosUID"],
+									ControllerUID:                  chaosResult.ObjectMeta.Labels["controller-uid"],
+									InfraID:                        chaosResult.ObjectMeta.Labels["infra_id"],
+									JobName:                        chaosResult.ObjectMeta.Labels["job-name"],
+									Name:                           chaosResult.ObjectMeta.Labels["name"],
+									StepPodName:                    chaosResult.ObjectMeta.Labels["step_pod_name"],
+									WorkflowName:                   chaosResult.ObjectMeta.Labels["workflow_name"],
+									WorkflowRunID:                  chaosResult.ObjectMeta.Labels["workflow_run_id"],
+								},
 							},
-						},
-						Spec: typespostgreschaosexperimentrun.ChaosExperimentRunSpec{
-							EngineName:     cern.ChaosExp.ChaosResult.Spec.EngineName,
-							ExperimentName: cern.ChaosExp.ChaosResult.Spec.ExperimentName,
-						},
-						Status: typespostgreschaosexperimentrun.ChaosExperimentRunStatus{
-							ExperimentStatus: typespostgreschaosexperimentrun.ChaosExperimentRunExperimentStatus{
-								Phase:                  string(cern.ChaosExp.ChaosResult.Status.ExperimentStatus.Phase),
-								Verdict:                string(cern.ChaosExp.ChaosResult.Status.ExperimentStatus.Verdict),
-								ProbeSuccessPercentage: cern.ChaosExp.ChaosResult.Status.ExperimentStatus.ProbeSuccessPercentage,
+							Spec: typespostgreschaosexperimentrun.ChaosExperimentRunSpec{
+								EngineName:     chaosResult.Spec.EngineName,
+								ExperimentName: chaosResult.Spec.ExperimentName,
 							},
-							ProbeStatuses: util.SliceMap(cern.ChaosExp.ChaosResult.Status.ProbeStatuses, func(probeStatus typeslitmusk8s.ProbeStatuses) typespostgreschaosexperimentrun.ChaosExperimentRunProbeStatus {
-								return typespostgreschaosexperimentrun.ChaosExperimentRunProbeStatus{
-									Name: probeStatus.Name,
-									Type: probeStatus.Type,
-									Mode: probeStatus.Mode,
-									Status: typespostgreschaosexperimentrun.ChaosExperimentRunProbeStatusesStatus{
-										Verdict:     string(probeStatus.Status.Verdict),
-										Description: probeStatus.Status.Description,
-									},
-								}
-							}),
-							History: typespostgreschaosexperimentrun.ChaosExperimentRunHistory{
-								PassedRuns:  cern.ChaosExp.ChaosResult.Status.History.PassedRuns,
-								FailedRuns:  cern.ChaosExp.ChaosResult.Status.History.FailedRuns,
-								StoppedRuns: cern.ChaosExp.ChaosResult.Status.History.StoppedRuns,
-								Targets: util.SliceMap(cern.ChaosExp.ChaosResult.Status.History.Targets, func(target typeslitmusk8s.TargetDetails) typespostgreschaosexperimentrun.ChaosExperimentRunHistoryTarget {
-									return typespostgreschaosexperimentrun.ChaosExperimentRunHistoryTarget{
-										Name:        target.Name,
-										Kind:        target.Kind,
-										ChaosStatus: target.ChaosStatus,
+							Status: typespostgreschaosexperimentrun.ChaosExperimentRunStatus{
+								ExperimentStatus: typespostgreschaosexperimentrun.ChaosExperimentRunExperimentStatus{
+									Phase:                  string(chaosResult.Status.ExperimentStatus.Phase),
+									Verdict:                string(chaosResult.Status.ExperimentStatus.Verdict),
+									ProbeSuccessPercentage: chaosResult.Status.ExperimentStatus.ProbeSuccessPercentage,
+								},
+								ProbeStatuses: util.SliceMap(chaosResult.Status.ProbeStatuses, func(probeStatus typeslitmusk8s.ProbeStatuses) typespostgreschaosexperimentrun.ChaosExperimentRunProbeStatus {
+									return typespostgreschaosexperimentrun.ChaosExperimentRunProbeStatus{
+										Name: probeStatus.Name,
+										Type: probeStatus.Type,
+										Mode: probeStatus.Mode,
+										Status: typespostgreschaosexperimentrun.ChaosExperimentRunProbeStatusesStatus{
+											Verdict:     string(probeStatus.Status.Verdict),
+											Description: probeStatus.Status.Description,
+										},
 									}
 								}),
+								History: typespostgreschaosexperimentrun.ChaosExperimentRunHistory{
+									PassedRuns:  chaosResult.Status.History.PassedRuns,
+									FailedRuns:  chaosResult.Status.History.FailedRuns,
+									StoppedRuns: chaosResult.Status.History.StoppedRuns,
+									Targets: util.SliceMap(chaosResult.Status.History.Targets, func(target typeslitmusk8s.TargetDetails) typespostgreschaosexperimentrun.ChaosExperimentRunHistoryTarget {
+										return typespostgreschaosexperimentrun.ChaosExperimentRunHistoryTarget{
+											Name:        target.Name,
+											Kind:        target.Kind,
+											ChaosStatus: target.ChaosStatus,
+										}
+									}),
+								},
 							},
-						},
-					},
+						}
+					}(cern.ChaosExp.ChaosResult),
 				}
 			}(cern),
 		})
